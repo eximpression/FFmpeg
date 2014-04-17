@@ -12,6 +12,7 @@ version <next>:
 - ciescope filter
 - protocol blacklisting API
 - DoP (DSD-over-PCM)
+- Wideband Single-bit Data (WSD) demuxer
 
 
 version 3.0:
