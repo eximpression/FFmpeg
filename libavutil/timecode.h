@@ -137,4 +137,12 @@ int av_timecode_init_from_string(AVTimecode *tc, AVRational rate, const char *st
  */
 int av_timecode_check_frame_rate(AVRational rate);
 
+/**
+ * Convert SMPTE timecode to ts
+ * @param tcsmpte    the 32-bit SMPTE timecode
+ * @param rate       time base
+ * @return timestamp
+ */
+int64_t av_smpte_timecode_to_timestamp(uint32_t tcsmpte, AVRational rate);
+
 #endif /* AVUTIL_TIMECODE_H */
