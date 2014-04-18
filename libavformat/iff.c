@@ -35,6 +35,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "libavcodec/bytestream.h"
+#include "libavcodec/dst.h"
 #include "avformat.h"
 #include "id3v2.h"
 #include "internal.h"
@@ -60,6 +61,7 @@
 #define ID_RGBN       MKTAG('R','G','B','N')
 #define ID_DSD        MKTAG('D','S','D',' ')
 #define ID_ANIM       MKTAG('A','N','I','M')
+#define ID_DST        MKTAG('D','S','T',' ')
 
 #define ID_FORM       MKTAG('F','O','R','M')
 #define ID_FRM8       MKTAG('F','R','M','8')
@@ -115,6 +117,8 @@ typedef struct IffDemuxContext {
     uint8_t   tvdc[32];     ///< TVDC lookup table
 } IffDemuxContext;
 
+#define CHUNK_HEADER_SIZE(x) ((x)->is_64bit ? 12 : 8)
+
 /* Metadata string read */
 static int get_metadata(AVFormatContext *s,
                         const char *const tag,
@@ -157,6 +161,7 @@ static int iff_probe(AVProbeData *p)
 
 static const AVCodecTag dsd_codec_tags[] = {
     { AV_CODEC_ID_DSD_MSBF, ID_DSD },
+    { AV_CODEC_ID_DST,      ID_DST },
     { AV_CODEC_ID_NONE, 0 },
 };
 
@@ -207,9 +212,10 @@ static const char * dsd_history_comment[] = {
 
 static int parse_dsd_diin(AVFormatContext *s, AVStream *st, uint64_t eof)
 {
+    IffDemuxContext *iff = s->priv_data;
     AVIOContext *pb = s->pb;
 
-    while (avio_tell(pb) + 12 <= eof) {
+    while (avio_tell(pb) + CHUNK_HEADER_SIZE(iff) <= eof) {
         uint32_t tag      = avio_rl32(pb);
         uint64_t size     = avio_rb64(pb);
         uint64_t orig_pos = avio_tell(pb);
@@ -237,13 +243,14 @@ static int parse_dsd_diin(AVFormatContext *s, AVStream *st, uint64_t eof)
 
 static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
 {
+    IffDemuxContext *iff = s->priv_data;
     AVIOContext *pb = s->pb;
     char abss[24];
     int hour, min, sec, i, ret, config;
     int dsd_layout[6];
     ID3v2ExtraMeta *id3v2_extra_meta;
 
-    while (avio_tell(pb) + 12 <= eof) {
+    while (avio_tell(pb) + CHUNK_HEADER_SIZE(iff) <= eof) {
         uint32_t tag      = avio_rl32(pb);
         uint64_t size     = avio_rb64(pb);
         uint64_t orig_pos = avio_tell(pb);
@@ -336,6 +343,91 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
     return 0;
 }
 
+static void parse_dsd_dsti(AVFormatContext *s, AVStream *st, uint64_t eof)
+{
+    IffDemuxContext *iff = s->priv_data;
+    AVIOContext *pb = s->pb;
+    int samples_per_frame = DST_SAMPLES_PER_FRAME(st->codec->sample_rate);
+    int64_t dts = 0;
+    while (avio_tell(pb) + CHUNK_HEADER_SIZE(iff) <= eof) {
+        uint64_t pos = avio_rb64(pb);
+        avio_skip(pb, 4);
+        if (pos < iff->body_pos + CHUNK_HEADER_SIZE(iff))
+            continue;
+        av_add_index_entry(st, pos - CHUNK_HEADER_SIZE(iff), dts, 0, 0, AVINDEX_KEYFRAME);
+        dts += samples_per_frame;
+    }
+}
+
+static int read_dst_frame(AVFormatContext *s, AVPacket *pkt)
+{
+    IffDemuxContext *iff = s->priv_data;
+    AVIOContext *pb = s->pb;
+    int ret;
+    uint32_t chunk_id;
+    uint64_t chunk_pos, data_pos, data_size;
+
+    while (1) {
+        chunk_pos = avio_tell(pb);
+        if (chunk_pos >= iff->body_end)
+            return AVERROR_EOF;
+
+        chunk_id = avio_rl32(pb);
+        data_size = iff->is_64bit ? avio_rb64(pb) : avio_rb32(pb);
+        data_pos = avio_tell(pb);
+
+        switch (chunk_id) {
+        case MKTAG('D','S','T','F'):
+            if (!pkt) {
+                iff->body_pos  = avio_tell(pb) - CHUNK_HEADER_SIZE(iff);
+                iff->body_size = iff->body_end - iff->body_pos;
+                return 0;
+            }
+            ret = av_get_packet(pb, pkt, data_size);
+            if (ret < 0)
+                return ret;
+            if (data_size & 1)
+                avio_skip(pb, 1);
+            pkt->flags |= AV_PKT_FLAG_KEY;
+            pkt->stream_index = 0;
+            pkt->duration = DST_SAMPLES_PER_FRAME(s->streams[0]->codec->sample_rate);
+            pkt->pos = chunk_pos;
+
+            /* read crc */
+            chunk_pos = avio_tell(pb);
+            if (chunk_pos >= iff->body_end)
+                return 0;
+
+            if (avio_rl32(pb) != MKTAG('D','S','T','C')) {
+                avio_seek(pb, chunk_pos, SEEK_SET);
+                return 0;
+            }
+
+            data_size = iff->is_64bit ? avio_rb64(pb) : avio_rb32(pb);
+            data_pos = avio_tell(pb);
+
+            if (data_size >= 4) {
+                uint8_t *checksum = av_packet_new_side_data(pkt, AV_PKT_DATA_DST_CHECKSUM, 4);
+                if (checksum)
+                    AV_WL32(checksum, avio_rb32(pb));
+            }
+
+            avio_skip(pb, data_size - (avio_tell(pb) - data_pos) + (data_size & 1));
+            return 0;
+
+        case MKTAG('F','R','T','E'):
+            if (data_size < 4)
+                return AVERROR_INVALIDDATA;
+            s->streams[0]->duration = avio_rb32(pb) * DST_SAMPLES_PER_FRAME(s->streams[0]->codec->sample_rate);
+            break;
+        }
+
+        avio_skip(pb, data_size - (avio_tell(pb) - data_pos) + (data_size & 1));
+    }
+
+    return ret;
+}
+
 static const uint8_t deep_rgb24[] = {0, 0, 0, 3, 0, 1, 0, 8, 0, 2, 0, 8, 0, 3, 0, 8};
 static const uint8_t deep_rgba[]  = {0, 0, 0, 4, 0, 1, 0, 8, 0, 2, 0, 8, 0, 3, 0, 8};
 static const uint8_t deep_bgra[]  = {0, 0, 0, 4, 0, 3, 0, 8, 0, 2, 0, 8, 0, 1, 0, 8};
@@ -355,6 +447,8 @@ static int iff_read_header(AVFormatContext *s)
     unsigned masking = 0; // no mask
     uint8_t fmt[16];
     int fmt_size;
+
+    s->flags |= AVFMT_FLAG_KEEP_SIDE_DATA;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -424,10 +518,16 @@ static int iff_read_header(AVFormatContext *s)
         case ID_BODY:
         case ID_DBOD:
         case ID_DSD:
+        case ID_DST:
         case ID_MDAT:
             iff->body_pos = avio_tell(pb);
             iff->body_end = iff->body_pos + data_size;
             iff->body_size = data_size;
+            if (chunk_id == ID_DST) {
+                int ret = read_dst_frame(s, NULL);
+                if (ret < 0)
+                    return ret;
+            }
             break;
 
         case ID_CHAN:
@@ -552,6 +652,10 @@ static int iff_read_header(AVFormatContext *s)
             res = parse_dsd_diin(s, st, orig_pos + data_size);
             if (res < 0)
                 return res;
+            break;
+
+        case MKTAG('D','S','T','I'):
+            parse_dsd_dsti(s, st, orig_pos + data_size);
             break;
 
         case MKTAG('P','R','O','P'):
@@ -718,7 +822,9 @@ static int iff_read_packet(AVFormatContext *s,
         return AVERROR_EOF;
 
     if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-        if (st->codec->codec_tag == ID_DSD || st->codec->codec_tag == ID_MAUD) {
+        if (st->codec->codec_id == AV_CODEC_ID_DST) {
+            return read_dst_frame(s, pkt);
+        } if (st->codec->codec_tag == ID_DSD || st->codec->codec_tag == ID_MAUD) {
             ret = av_get_packet(pb, pkt, FFMIN(iff->body_end - pos, 1024 * st->codec->block_align));
         } else {
             if (iff->body_size > INT_MAX)
