@@ -115,6 +115,14 @@ static unsigned bcd2uint(uint8_t bcd)
    return low + 10*high;
 }
 
+int64_t av_smpte_timecode_to_timestamp(uint32_t tcsmpte, AVRational rate)
+{
+    int64_t s = bcd2uint(tcsmpte     & 0x3f) * 3600 +  // 6-bit hours
+                bcd2uint(tcsmpte>>8  & 0x7f) * 60 +    // 7-bit minutes
+                bcd2uint(tcsmpte>>16 & 0x7f);          // 7-bit seconds
+    return s / av_q2d(rate);
+}
+
 char *av_timecode_make_smpte_tc_string(char *buf, uint32_t tcsmpte, int prevent_df)
 {
     unsigned hh   = bcd2uint(tcsmpte     & 0x3f);    // 6-bit hours
