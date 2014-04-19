@@ -398,6 +398,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (DSD_MSBF,          dsd_msbf);
     REGISTER_ENCDEC (DSD_LSBF_PLANAR,   dsd_lsbf_planar);
     REGISTER_ENCDEC (DSD_MSBF_PLANAR,   dsd_msbf_planar);
+    REGISTER_DECODER(DST,               dst);
     REGISTER_DECODER(DSICINAUDIO,       dsicinaudio);
     REGISTER_DECODER(DSS_SP,            dss_sp);
     REGISTER_ENCDEC (EAC3,              eac3);
