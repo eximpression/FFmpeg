@@ -13,6 +13,7 @@ version <next>:
 - protocol blacklisting API
 - DoP (DSD-over-PCM)
 - Wideband Single-bit Data (WSD) demuxer
+- Direct Stream Transfer (DST) decoder
 
 
 version 3.0:
@@ -125,7 +126,6 @@ version 2.8:
 - framerate filter
 - Switched default encoders for webm to VP9 and Opus
 - Removed experimental flag from the JPEG 2000 encoder
-
 
 version 2.7:
 - FFT video filter
