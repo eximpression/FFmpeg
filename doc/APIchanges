@@ -12,6 +12,12 @@ libswresample: 2015-08-28
 libswscale:    2015-08-28
 libavutil:     2015-08-28
 
+2014-xx-xx - xxxxxxxx - lsws x.x.x
+  Add swr_get_dsd2pcm_sr_factor() function.
+
+2014-xx-xx - xxxxxxxx - libavu xx.xx.x
+  Add AV_SAMPLE_FMT_DSD and AV_SAMPLE_FMT_DSDP.
+
 2014-xx-xx - xxxxxxxx - libavu xx.xx.x
   Add AV_SAMPLE_FMT_DSD and AV_SAMPLE_FMT_DSDP.
 
