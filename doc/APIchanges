@@ -12,6 +12,8 @@ libswresample: 2015-08-28
 libswscale:    2015-08-28
 libavutil:     2015-08-28
 
+2014-xx-xx - xxxxxxxx - libavu xx.xx.x
+  Add AV_SAMPLE_FMT_DSD and AV_SAMPLE_FMT_DSDP.
 
 API changes, most recent first:
 

@@ -37,11 +37,13 @@ static const SampleFmtInfo sample_fmt_info[AV_SAMPLE_FMT_NB] = {
     [AV_SAMPLE_FMT_S32]  = { .name =  "s32", .bits = 32, .planar = 0, .altform = AV_SAMPLE_FMT_S32P },
     [AV_SAMPLE_FMT_FLT]  = { .name =  "flt", .bits = 32, .planar = 0, .altform = AV_SAMPLE_FMT_FLTP },
     [AV_SAMPLE_FMT_DBL]  = { .name =  "dbl", .bits = 64, .planar = 0, .altform = AV_SAMPLE_FMT_DBLP },
+    [AV_SAMPLE_FMT_DSD]  = { .name =  "dsd", .bits =  8, .planar = 0, .altform = AV_SAMPLE_FMT_DSDP },
     [AV_SAMPLE_FMT_U8P]  = { .name =  "u8p", .bits =  8, .planar = 1, .altform = AV_SAMPLE_FMT_U8   },
     [AV_SAMPLE_FMT_S16P] = { .name = "s16p", .bits = 16, .planar = 1, .altform = AV_SAMPLE_FMT_S16  },
     [AV_SAMPLE_FMT_S32P] = { .name = "s32p", .bits = 32, .planar = 1, .altform = AV_SAMPLE_FMT_S32  },
     [AV_SAMPLE_FMT_FLTP] = { .name = "fltp", .bits = 32, .planar = 1, .altform = AV_SAMPLE_FMT_FLT  },
     [AV_SAMPLE_FMT_DBLP] = { .name = "dblp", .bits = 64, .planar = 1, .altform = AV_SAMPLE_FMT_DBL  },
+    [AV_SAMPLE_FMT_DSDP] = { .name = "dsdp", .bits =  8, .planar = 1, .altform = AV_SAMPLE_FMT_DSD  },
 };
 
 const char *av_get_sample_fmt_name(enum AVSampleFormat sample_fmt)
@@ -239,9 +241,14 @@ int av_samples_set_silence(uint8_t **audio_data, int offset, int nb_samples,
     int planes      = planar ? nb_channels : 1;
     int block_align = av_get_bytes_per_sample(sample_fmt) * (planar ? 1 : nb_channels);
     int data_size   = nb_samples * block_align;
-    int fill_char   = (sample_fmt == AV_SAMPLE_FMT_U8 ||
-                     sample_fmt == AV_SAMPLE_FMT_U8P) ? 0x80 : 0x00;
-    int i;
+    int fill_char, i;
+
+    if (sample_fmt == AV_SAMPLE_FMT_U8 || sample_fmt == AV_SAMPLE_FMT_U8P)
+        fill_char = 0x80;
+    else if (sample_fmt == AV_SAMPLE_FMT_DSD || sample_fmt == AV_SAMPLE_FMT_DSDP)
+        fill_char = 0x69;
+    else
+        fill_char = 0x00;
 
     offset *= block_align;
 

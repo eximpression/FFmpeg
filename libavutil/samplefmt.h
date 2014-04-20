@@ -69,6 +69,9 @@ enum AVSampleFormat {
     AV_SAMPLE_FMT_FLTP,        ///< float, planar
     AV_SAMPLE_FMT_DBLP,        ///< double, planar
 
+    AV_SAMPLE_FMT_DSD,         ///< one-bit audio
+    AV_SAMPLE_FMT_DSDP,        ///< one-bit audio, planar
+
     AV_SAMPLE_FMT_NB           ///< Number of sample formats. DO NOT USE if linking dynamically
 };
 
