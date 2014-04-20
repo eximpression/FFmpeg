@@ -545,6 +545,13 @@ int swr_convert_frame(SwrContext *swr,
  */
 int swr_config_frame(SwrContext *swr, const AVFrame *out, const AVFrame *in);
 
+/*
+ * Return DSD to PCM sample rate conversion factor
+ *
+ * When converting DSD to PCM the sample rate is divided by a factor.
+ */
+int swr_get_dsd2pcm_sr_factor(struct SwrContext *s);
+
 /**
  * @}
  * @}

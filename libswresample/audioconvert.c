@@ -1,6 +1,8 @@
 /*
  * audio conversion
  * Copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at>
+ * based on BSD licensed dsd2pcm by Sebastian Gesemann
+ * Copyright (c) 2009, 2011 Sebastian Gesemann. All rights reserved.
  *
  * This file is part of FFmpeg.
  *
@@ -29,6 +31,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/libm.h"
 #include "libavutil/samplefmt.h"
+#include "libavcodec/mathops.h" // ff_reverse
 #include "audioconvert.h"
 
 
@@ -36,7 +39,7 @@
 
 //FIXME rounding ?
 #define CONV_FUNC(ofmt, otype, ifmt, expr)\
-static void CONV_FUNC_NAME(ofmt, ifmt)(uint8_t *po, const uint8_t *pi, int is, int os, uint8_t *end)\
+static void CONV_FUNC_NAME(ofmt, ifmt)(ChannelState *s, uint8_t *po, const uint8_t *pi, int is, int os, uint8_t *end)\
 {\
     uint8_t *end2 = end - 3*os;\
     while(po < end2){\
@@ -76,6 +79,42 @@ CONV_FUNC(AV_SAMPLE_FMT_S16, int16_t, AV_SAMPLE_FMT_DBL, av_clip_int16(  lrint(*
 CONV_FUNC(AV_SAMPLE_FMT_S32, int32_t, AV_SAMPLE_FMT_DBL, av_clipl_int32(llrint(*(const double*)pi * (1U<<31))))
 CONV_FUNC(AV_SAMPLE_FMT_FLT, float  , AV_SAMPLE_FMT_DBL, *(const double*)pi)
 CONV_FUNC(AV_SAMPLE_FMT_DBL, double , AV_SAMPLE_FMT_DBL, *(const double*)pi)
+CONV_FUNC(AV_SAMPLE_FMT_DSD, uint8_t, AV_SAMPLE_FMT_DSD, *(const uint8_t*)pi)
+
+#include "dsd_tablegen.h"
+#define FIFOMASK (DSD_FIFOSIZE - 1)  /** bit mask for FIFO offsets */
+#if DSD_FIFOSIZE * 8 < HTAPS * 2
+#error "DSD_FIFOSIZE too small"
+#endif
+
+#define DSD2PCM_CONV_FUNC(ofmt, otype, expr)\
+static void CONV_FUNC_NAME(ofmt, AV_SAMPLE_FMT_DSD)(ChannelState *s, uint8_t *po, const uint8_t *pi, int is, int os, uint8_t *end)\
+{\
+    unsigned pos, i;\
+    unsigned char* p;\
+    double sum;\
+    pos = s->pos;\
+    while (po < end) {\
+        s->buf[pos] = *pi; pi += is;\
+        p = s->buf + ((pos - CTABLES) & FIFOMASK);\
+        *p = ff_reverse[*p];\
+        sum = 0.0;\
+        for (i = 0; i < CTABLES; i++) {\
+            unsigned char a = s->buf[(pos                   - i) & FIFOMASK];\
+            unsigned char b = s->buf[(pos - (CTABLES*2 - 1) + i) & FIFOMASK];\
+            sum += ctables[i][a] + ctables[i][b];\
+        }\
+        *(otype*)po = expr; po += os;\
+        pos = (pos + 1) & FIFOMASK;\
+    }\
+    s->pos = pos;\
+}
+
+DSD2PCM_CONV_FUNC(AV_SAMPLE_FMT_U8 , uint8_t, av_clip_uint8(  lrint(sum * (1<<7)) + 0x80))
+DSD2PCM_CONV_FUNC(AV_SAMPLE_FMT_S16, int16_t, av_clip_int16(  lrint(sum * (1<<15))))
+DSD2PCM_CONV_FUNC(AV_SAMPLE_FMT_S32, int32_t, av_clipl_int32(llrint(sum * (1U<<31))))
+DSD2PCM_CONV_FUNC(AV_SAMPLE_FMT_FLT, float  , sum)
+DSD2PCM_CONV_FUNC(AV_SAMPLE_FMT_DBL, double , sum)
 
 #define FMT_PAIR_FUNC(out, in) [(out) + AV_SAMPLE_FMT_NB*(in)] = CONV_FUNC_NAME(out, in)
 
@@ -105,6 +144,12 @@ static conv_func_type * const fmt_pair_to_conv_functions[AV_SAMPLE_FMT_NB*AV_SAM
     FMT_PAIR_FUNC(AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_DBL),
     FMT_PAIR_FUNC(AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_DBL),
     FMT_PAIR_FUNC(AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBL),
+    FMT_PAIR_FUNC(AV_SAMPLE_FMT_U8,  AV_SAMPLE_FMT_DSD),
+    FMT_PAIR_FUNC(AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_DSD),
+    FMT_PAIR_FUNC(AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_DSD),
+    FMT_PAIR_FUNC(AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_DSD),
+    FMT_PAIR_FUNC(AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DSD),
+    FMT_PAIR_FUNC(AV_SAMPLE_FMT_DSD, AV_SAMPLE_FMT_DSD),
 };
 
 static void cpy1(uint8_t **dst, const uint8_t **src, int len){
@@ -133,6 +178,20 @@ AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
     ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
         return NULL;
+
+    if (av_get_packed_sample_fmt(in_fmt) == AV_SAMPLE_FMT_DSD) {
+        int ch;
+        dsd_ctables_tableinit();
+        for (ch = 0; ch < channels; ch++) {
+            ctx->channel[ch].pos = 0;
+            memset(ctx->channel[ch].buf, 0x69, sizeof(ctx->channel[ch].buf));
+            /* 0x69 = 01101001
+            * This pattern "on repeat" makes a low energy 352.8 kHz tone
+            * and a high energy 1.0584 MHz tone which should be filtered
+            * out completely by any playback system --> silence
+            */
+        }
+    }
 
     if(channels == 1){
          in_fmt = av_get_planar_sample_fmt( in_fmt);
@@ -219,7 +278,7 @@ int swri_audio_convert(AudioConvert *ctx, AudioData *out, AudioData *in, int len
         uint8_t *end= po + os*len;
         if(!po)
             continue;
-        ctx->conv_f(po+off*os, pi+off*is, is, os, end);
+        ctx->conv_f(&ctx->channel[ch], po+off*os, pi+off*is, is, os, end);
     }
     return 0;
 }

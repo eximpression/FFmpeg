@@ -323,6 +323,7 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
             break;
         case AV_SAMPLE_FMT_FLTP:
         case AV_SAMPLE_FMT_DBLP:
+        case AV_SAMPLE_FMT_DSDP:
             c->filter_shift = 0;
             break;
         default:

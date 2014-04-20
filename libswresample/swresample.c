@@ -148,6 +148,19 @@ av_cold void swr_free(SwrContext **ss){
     av_freep(ss);
 }
 
+static int is_sample_rate_different(struct SwrContext *s)
+{
+    int in_fmtp = av_get_planar_sample_fmt(s->in_sample_fmt);
+    int out_fmtp = av_get_planar_sample_fmt(s->out_sample_fmt);
+
+    if (out_fmtp != AV_SAMPLE_FMT_DSDP && in_fmtp == AV_SAMPLE_FMT_DSDP)
+        return s->out_sample_rate != s->in_sample_rate / 8;
+    else if (out_fmtp == AV_SAMPLE_FMT_DSDP && in_fmtp != AV_SAMPLE_FMT_DSDP)
+        return s->out_sample_rate != s->in_sample_rate * 8;
+    else
+        return s->out_sample_rate != s->in_sample_rate;
+}
+
 av_cold void swr_close(SwrContext *s){
     clear_context(s);
 }
@@ -228,6 +241,8 @@ av_cold int swr_init(struct SwrContext *s){
             s->int_sample_fmt= AV_SAMPLE_FMT_S32P;
         }else if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_FLTP){
             s->int_sample_fmt= AV_SAMPLE_FMT_FLTP;
+        }else if(av_get_planar_sample_fmt(s->in_sample_fmt) == AV_SAMPLE_FMT_DSDP && av_get_planar_sample_fmt(s->out_sample_fmt) == AV_SAMPLE_FMT_DSDP) {
+            s->int_sample_fmt= AV_SAMPLE_FMT_DSDP;
         }else{
             s->int_sample_fmt= AV_SAMPLE_FMT_DBLP;
         }
@@ -237,7 +252,8 @@ av_cold int swr_init(struct SwrContext *s){
     if(   s->int_sample_fmt != AV_SAMPLE_FMT_S16P
         &&s->int_sample_fmt != AV_SAMPLE_FMT_S32P
         &&s->int_sample_fmt != AV_SAMPLE_FMT_FLTP
-        &&s->int_sample_fmt != AV_SAMPLE_FMT_DBLP){
+        &&s->int_sample_fmt != AV_SAMPLE_FMT_DBLP
+        &&s->int_sample_fmt != AV_SAMPLE_FMT_DSDP){
         av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, S16/S32/FLT/DBL is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
         return AVERROR(EINVAL);
     }
@@ -261,7 +277,19 @@ av_cold int swr_init(struct SwrContext *s){
         }
     }
 
-    if (s->out_sample_rate!=s->in_sample_rate || (s->flags & SWR_FLAG_RESAMPLE)){
+    /** FIXME:pross MERGE */
+    av_log(s, AV_LOG_INFO, "resample?:%i (%s->%s->%s) (%i -> %i), force?:%i\n", is_sample_rate_different(s), av_get_sample_fmt_name(s->in_sample_fmt), av_get_sample_fmt_name(s->int_sample_fmt), av_get_sample_fmt_name(s->out_sample_fmt),  s->in_sample_rate, s->out_sample_rate, !!(s->flags & SWR_FLAG_RESAMPLE));
+    if (is_sample_rate_different(s) || (s->flags & SWR_FLAG_RESAMPLE)){
+        int int_sample_rate = s->in_sample_rate;
+        if (av_get_planar_sample_fmt(s->in_sample_fmt) == AV_SAMPLE_FMT_DSDP && av_get_planar_sample_fmt(s->out_sample_fmt) != AV_SAMPLE_FMT_DSDP) {
+            int_sample_rate /= swr_get_dsd2pcm_sr_factor(s);
+            av_log(s, AV_LOG_DEBUG, "performing dsd2pcm conversion and %s resample (%i -> %i -> %i Hz)\n", av_get_sample_fmt_name(s->int_sample_fmt), s->in_sample_rate, int_sample_rate, s->out_sample_rate);
+        } else if (av_get_planar_sample_fmt(s->in_sample_fmt) == AV_SAMPLE_FMT_DSDP && av_get_planar_sample_fmt(s->out_sample_fmt) == AV_SAMPLE_FMT_DSDP) {
+            av_log(s, AV_LOG_ERROR, "dsd to dsd resampling not implemented\n");
+            return -1;
+        }
+        s->resample = s->resampler->init(s->resample, s->out_sample_rate, int_sample_rate, s->filter_size, s->phase_shift, s->linear_interp, s->cutoff, s->int_sample_fmt, s->filter_type, s->kaiser_beta, s->precision, s->cheby);
+    } else if (s->out_sample_rate!=s->in_sample_rate || (s->flags & SWR_FLAG_RESAMPLE)){
         s->resample = s->resampler->init(s->resample, s->out_sample_rate, s->in_sample_rate, s->filter_size, s->phase_shift, s->linear_interp, s->cutoff, s->int_sample_fmt, s->filter_type, s->kaiser_beta, s->precision, s->cheby);
         if (!s->resample) {
             av_log(s, AV_LOG_ERROR, "Failed to initialize resampler\n");
@@ -273,8 +301,9 @@ av_cold int swr_init(struct SwrContext *s){
         && s->int_sample_fmt != AV_SAMPLE_FMT_S32P
         && s->int_sample_fmt != AV_SAMPLE_FMT_FLTP
         && s->int_sample_fmt != AV_SAMPLE_FMT_DBLP
+        && s->int_sample_fmt != AV_SAMPLE_FMT_DSDP
         && s->resample){
-        av_log(s, AV_LOG_ERROR, "Resampling only supported with internal s16/s32/flt/dbl\n");
+        av_log(s, AV_LOG_ERROR, "Resampling only supported with internal s16/s32/flt/dbl/dsd\n");
         ret = AVERROR(EINVAL);
         goto fail;
     }
@@ -927,4 +956,9 @@ int64_t swr_next_pts(struct SwrContext *s, int64_t pts){
 
         return s->outpts;
     }
+}
+
+int swr_get_dsd2pcm_sr_factor(struct SwrContext *s)
+{
+    return 8;
 }
