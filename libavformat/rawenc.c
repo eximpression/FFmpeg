@@ -137,6 +137,32 @@ AVOutputFormat ff_dnxhd_muxer = {
 };
 #endif
 
+#if CONFIG_DSD_MUXER
+AVOutputFormat ff_dsd_muxer = {
+    .name              = "dsd",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw DSD"),
+    .extensions        = "dsd",
+    .audio_codec       = AV_CODEC_ID_DSD_MSBF,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
+#if CONFIG_DST_MUXER
+AVOutputFormat ff_dst_muxer = {
+    .name              = "dst",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw DST"),
+    .extensions        = "dst",
+    .audio_codec       = AV_CODEC_ID_DST,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_DTS_MUXER
 AVOutputFormat ff_dts_muxer = {
     .name              = "dts",
