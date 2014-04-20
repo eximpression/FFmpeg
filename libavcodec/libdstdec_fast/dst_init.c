@@ -76,7 +76,7 @@ static void *MemoryAllocate(int NrOfElements, int SizeOfElement)
 {
   void *Array;
 
-  if ((Array = _mm_malloc(NrOfElements * SizeOfElement, 16)) == NULL) 
+  if ((Array = av_malloc(NrOfElements * SizeOfElement)) == NULL)
   {
     fprintf(stderr,"ERROR: not enough memory available!\n\n");
   }
@@ -85,7 +85,7 @@ static void *MemoryAllocate(int NrOfElements, int SizeOfElement)
 
 static void MemoryFree(void *Array) 
 {
-  _mm_free(Array);
+  av_free(Array);
 }
 
 /* General function for allocating memory for array of any type */

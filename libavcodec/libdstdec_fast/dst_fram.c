@@ -267,6 +267,7 @@ static void LT_InitCoefTablesI(ebunch *D, int16_t ICoefI[2 * MAX_CHANNELS][16][2
     }
 }
 
+#if 0
 static void LT_InitCoefTablesU(ebunch *D, uint16_t ICoefU[2 * MAX_CHANNELS][16][256])
 {
     int FilterNr, FilterLength, TableNr, k, i, j;
@@ -297,6 +298,7 @@ static void LT_InitCoefTablesU(ebunch *D, uint16_t ICoefU[2 * MAX_CHANNELS][16][
         }
     }
 }
+#endif
 
 static void LT_InitStatus(ebunch *D, uint8_t Status[MAX_CHANNELS][16])
 {
@@ -311,6 +313,7 @@ static void LT_InitStatus(ebunch *D, uint8_t Status[MAX_CHANNELS][16])
     }
 }
 
+#if 0
 static int16_t LT_RunFilterI(int16_t FilterTable[16][256], uint8_t ChannelStatus[16])
 {
     int Predict;
@@ -350,6 +353,7 @@ static int16_t LT_RunFilterU(uint16_t FilterTable[16][256], uint8_t ChannelStatu
     Predict = (Predict32 >> 16) + (Predict32 & 0xffff);
     return (int16_t)Predict;
 }
+#endif
 
 /***************************************************************************/
 /*                                                                         */
@@ -421,9 +425,17 @@ int DST_FramDSTDecode(uint8_t *DSTdata, uint8_t *MuxedDSDdata, int FrameSizeInBy
     if (D->FrameHdr.DSTCoded == 1)
     {
         ACData AC;
+#if 0
         __declspec(align(16)) int16_t  LT_ICoefI[2 * MAX_CHANNELS][16][256];
+#else
+        int16_t  LT_ICoefI[2 * MAX_CHANNELS][16][256];
+#endif
         //__declspec(align(16)) uint16_t LT_ICoefU[2 * MAX_CHANNELS][16][256];
+#if 0
         __declspec(align(16)) uint8_t  LT_Status[MAX_CHANNELS][16];
+#else
+        uint8_t  LT_Status[MAX_CHANNELS][16];
+#endif
 
         FillTable4Bit(NrOfChannels, NrOfBitsPerCh, &D->FrameHdr.FSeg, D->FrameHdr.Filter4Bit);
         FillTable4Bit(NrOfChannels, NrOfBitsPerCh, &D->FrameHdr.PSeg, D->FrameHdr.Ptable4Bit);
