@@ -192,3 +192,27 @@ static int mjpeg_probe(AVProbeData *p)
 
 FF_DEF_RAWVIDEO_DEMUXER2(mjpeg, "raw MJPEG video", mjpeg_probe, "mjpg,mjpeg,mpo", AV_CODEC_ID_MJPEG, AVFMT_GENERIC_INDEX|AVFMT_NOTIMESTAMPS)
 #endif
+
+#if CONFIG_DSD_DEMUXER
+AVInputFormat ff_dsd_demuxer = {
+    .name           = "dsd",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw DSD"),
+    .read_header    = ff_raw_audio_read_header,
+    .read_packet    = ff_raw_read_partial_packet,
+    .flags          = AVFMT_GENERIC_INDEX,
+    .extensions     = "dsd",
+    .raw_codec_id   = AV_CODEC_ID_DSD_MSBF,
+};
+#endif
+
+#if CONFIG_DST_DEMUXER
+AVInputFormat ff_dst_demuxer = {
+    .name           = "dst",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw DST"),
+    .read_header    = ff_raw_audio_read_header,
+    .read_packet    = ff_raw_read_partial_packet,
+    .flags          = AVFMT_GENERIC_INDEX,
+    .extensions     = "dst",
+    .raw_codec_id   = AV_CODEC_ID_DST,
+};
+#endif
