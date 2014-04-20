@@ -94,6 +94,8 @@ static void audio_frame_cksum(AVBPrint *bp, AVFrame *frame)
         switch (frame->format) {
         case AV_SAMPLE_FMT_U8:
         case AV_SAMPLE_FMT_U8P:
+        case AV_SAMPLE_FMT_DSD:
+        case AV_SAMPLE_FMT_DSDP:
             cksum_line_u8(&cksum, d, nb_samples);
             break;
         case AV_SAMPLE_FMT_S16:
