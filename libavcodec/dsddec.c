@@ -29,127 +29,58 @@
 #include "libavcodec/internal.h"
 #include "libavcodec/mathops.h"
 #include "avcodec.h"
-#include "dsd_tablegen.h"
 
-#define FIFOSIZE 16              /** must be a power of two */
-#define FIFOMASK (FIFOSIZE - 1)  /** bit mask for FIFO offsets */
-
-#if FIFOSIZE * 8 < HTAPS * 2
-#error "FIFOSIZE too small"
-#endif
-
-/**
- * Per-channel buffer
- */
-typedef struct {
-    unsigned char buf[FIFOSIZE];
-    unsigned pos;
-} DSDContext;
-
-static void dsd2pcm_translate(DSDContext* s, size_t samples, int lsbf,
-                              const unsigned char *src, ptrdiff_t src_stride,
-                              float *dst, ptrdiff_t dst_stride)
+static void reverse_memcpy(uint8_t *dst, const uint8_t *src, int size)
 {
-    unsigned pos, i;
-    unsigned char* p;
-    double sum;
-
-    pos = s->pos;
-
-    while (samples-- > 0) {
-        s->buf[pos] = lsbf ? ff_reverse[*src] : *src;
-        src += src_stride;
-
-        p = s->buf + ((pos - CTABLES) & FIFOMASK);
-        *p = ff_reverse[*p];
-
-        sum = 0.0;
-        for (i = 0; i < CTABLES; i++) {
-            unsigned char a = s->buf[(pos                   - i) & FIFOMASK];
-            unsigned char b = s->buf[(pos - (CTABLES*2 - 1) + i) & FIFOMASK];
-            sum += ctables[i][a] + ctables[i][b];
-        }
-
-        *dst = (float)sum;
-        dst += dst_stride;
-
-        pos = (pos + 1) & FIFOMASK;
-    }
-
-    s->pos = pos;
-}
-
-static av_cold void init_static_data(void)
-{
-    static int done = 0;
-    if (done)
-        return;
-    dsd_ctables_tableinit();
-    done = 1;
+    int i;
+    for (i = 0; i < size; i++)
+        dst[i] = ff_reverse[src[i]];
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    DSDContext * s;
-    int i;
-
-    init_static_data();
-
-    s = av_malloc_array(sizeof(DSDContext), avctx->channels);
-    if (!s)
-        return AVERROR(ENOMEM);
-
-    for (i = 0; i < avctx->channels; i++) {
-        s[i].pos = 0;
-        memset(s[i].buf, 0x69, sizeof(s[i].buf));
-
-        /* 0x69 = 01101001
-         * This pattern "on repeat" makes a low energy 352.8 kHz tone
-         * and a high energy 1.0584 MHz tone which should be filtered
-         * out completely by any playback system --> silence
-         */
-    }
-
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
-    avctx->priv_data  = s;
+    avctx->sample_fmt = avctx->codec->sample_fmts[0];
     return 0;
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data,
                         int *got_frame_ptr, AVPacket *avpkt)
 {
-    DSDContext * s = avctx->priv_data;
+    const uint8_t * src = avpkt->data;
     AVFrame *frame = data;
-    int ret, i;
-    int lsbf = avctx->codec_id == AV_CODEC_ID_DSD_LSBF || avctx->codec_id == AV_CODEC_ID_DSD_LSBF_PLANAR;
-    int src_next;
-    int src_stride;
+    int ret, ch;
 
     frame->nb_samples = avpkt->size / avctx->channels;
-
-    if (avctx->codec_id == AV_CODEC_ID_DSD_LSBF_PLANAR || avctx->codec_id == AV_CODEC_ID_DSD_MSBF_PLANAR) {
-        src_next   = frame->nb_samples;
-        src_stride = 1;
-    } else {
-        src_next   = 1;
-        src_stride = avctx->channels;
-    }
-
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
-    for (i = 0; i < avctx->channels; i++) {
-        float * dst = ((float **)frame->extended_data)[i];
-        dsd2pcm_translate(&s[i], frame->nb_samples, lsbf,
-            avpkt->data + i * src_next, src_stride,
-            dst, 1);
+    switch(avctx->codec_id) {
+    case AV_CODEC_ID_DSD_LSBF:
+        reverse_memcpy(frame->data[0], src, frame->nb_samples * avctx->channels);
+        break;
+    case AV_CODEC_ID_DSD_MSBF:
+        memcpy(frame->data[0], src, frame->nb_samples * avctx->channels);
+        break;
+    case AV_CODEC_ID_DSD_LSBF_PLANAR:
+        for (ch = 0; ch < avctx->channels; ch++ ) {
+            reverse_memcpy(frame->extended_data[ch], src, frame->nb_samples);
+            src += frame->nb_samples;
+        }
+        break;
+    case AV_CODEC_ID_DSD_MSBF_PLANAR:
+        for (ch = 0; ch < avctx->channels; ch++ ) {
+            memcpy(frame->extended_data[ch], src, frame->nb_samples);
+            src += frame->nb_samples;
+        }
+        break;
+    default:
+        return -1;
     }
-
     *got_frame_ptr = 1;
     return frame->nb_samples * avctx->channels;
 }
 
-#define DSD_DECODER(id_, name_, long_name_) \
+#define DSD_DECODER(id_, sample_fmt_, name_, long_name_) \
 AVCodec ff_##name_##_decoder = { \
     .name         = #name_, \
     .long_name    = NULL_IF_CONFIG_SMALL(long_name_), \
@@ -157,11 +88,76 @@ AVCodec ff_##name_##_decoder = { \
     .id           = AV_CODEC_ID_##id_, \
     .init         = decode_init, \
     .decode       = decode_frame, \
-    .sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP, \
+    .sample_fmts  = (const enum AVSampleFormat[]){ sample_fmt_, \
                                                    AV_SAMPLE_FMT_NONE }, \
 };
 
-DSD_DECODER(DSD_LSBF, dsd_lsbf, "DSD (Direct Stream Digital), least significant bit first")
-DSD_DECODER(DSD_MSBF, dsd_msbf, "DSD (Direct Stream Digital), most significant bit first")
-DSD_DECODER(DSD_MSBF_PLANAR, dsd_msbf_planar, "DSD (Direct Stream Digital), most significant bit first, planar")
-DSD_DECODER(DSD_LSBF_PLANAR, dsd_lsbf_planar, "DSD (Direct Stream Digital), least significant bit first, planar")
+DSD_DECODER(DSD_LSBF,        AV_SAMPLE_FMT_DSD,  dsd_lsbf,        "DSD (Direct Stream Digital), least significant bit first")
+DSD_DECODER(DSD_MSBF,        AV_SAMPLE_FMT_DSD,  dsd_msbf,        "DSD (Direct Stream Digital), most significant bit first")
+DSD_DECODER(DSD_LSBF_PLANAR, AV_SAMPLE_FMT_DSDP, dsd_lsbf_planar, "DSD (Direct Stream Digital), least significant bit first, planar")
+DSD_DECODER(DSD_MSBF_PLANAR, AV_SAMPLE_FMT_DSDP, dsd_msbf_planar, "DSD (Direct Stream Digital), most significant bit first, planar")
+
+static av_cold int encode_init(AVCodecContext *avctx)
+{
+    avctx->bits_per_coded_sample = av_get_bits_per_sample(avctx->codec->id);
+    avctx->bit_rate              = avctx->sample_rate * avctx->channels;
+    if (avctx->sample_fmt == AV_SAMPLE_FMT_DSDP) {
+        avctx->frame_size  = 4096;
+        avctx->block_align = avctx->frame_size * avctx->channels;
+    }
+    return 0;
+}
+
+static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                            const AVFrame *frame, int *got_packet_ptr)
+{
+    uint8_t *dst;
+    int n, ret, ch;
+    n = frame->nb_samples * avctx->channels;
+    if ((ret = ff_alloc_packet2(avctx, avpkt, n, 0)) < 0)
+        return ret;
+    dst = avpkt->data;
+
+    switch(avctx->codec_id) {
+    case AV_CODEC_ID_DSD_LSBF:
+        reverse_memcpy(dst, frame->data[0], n);
+        break;
+    case AV_CODEC_ID_DSD_MSBF:
+        memcpy(dst, frame->data[0], n);
+        break;
+    case AV_CODEC_ID_DSD_LSBF_PLANAR:
+        for (ch = 0; ch < avctx->channels; ch++ ) {
+            reverse_memcpy(dst, frame->extended_data[ch], frame->nb_samples);
+            dst += frame->nb_samples;
+        }
+        break;
+    case AV_CODEC_ID_DSD_MSBF_PLANAR:
+        for (ch = 0; ch < avctx->channels; ch++ ) {
+            memcpy(dst, frame->extended_data[ch], frame->nb_samples);
+            dst += frame->nb_samples;
+        }
+        break;
+    default:
+        return -1;
+    }
+    *got_packet_ptr = 1;
+    return 0;
+}
+
+#define DSD_ENCODER(id_, sample_fmt_, name_, long_name_, capabilities_) \
+AVCodec ff_##name_##_encoder = { \
+    .name         = #name_, \
+    .long_name    = NULL_IF_CONFIG_SMALL(long_name_), \
+    .type         = AVMEDIA_TYPE_AUDIO, \
+    .id           = AV_CODEC_ID_##id_, \
+    .init         = encode_init, \
+    .encode2      = encode_frame, \
+    .capabilities = capabilities_,\
+    .sample_fmts  = (const enum AVSampleFormat[]){ sample_fmt_, \
+                                                   AV_SAMPLE_FMT_NONE }, \
+};
+
+DSD_ENCODER(DSD_LSBF,        AV_SAMPLE_FMT_DSD,  dsd_lsbf,        "DSD (Direct Stream Digital), least significant bit first", CODEC_CAP_VARIABLE_FRAME_SIZE)
+DSD_ENCODER(DSD_MSBF,        AV_SAMPLE_FMT_DSD,  dsd_msbf,        "DSD (Direct Stream Digital), most significant bit first", CODEC_CAP_VARIABLE_FRAME_SIZE)
+DSD_ENCODER(DSD_LSBF_PLANAR, AV_SAMPLE_FMT_DSDP, dsd_lsbf_planar, "DSD (Direct Stream Digital), least significant bit first, planar", 0)
+DSD_ENCODER(DSD_MSBF_PLANAR, AV_SAMPLE_FMT_DSDP, dsd_msbf_planar, "DSD (Direct Stream Digital), most significant bit first, planar", 0)
