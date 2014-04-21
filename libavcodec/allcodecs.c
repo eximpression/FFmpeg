@@ -393,6 +393,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(BMV_AUDIO,         bmv_audio);
     REGISTER_DECODER(COOK,              cook);
     REGISTER_ENCDEC (DCA,               dca);
+    REGISTER_ENCDEC (DOP_S24LE,         dop_s24le);
     REGISTER_ENCDEC (DSD_LSBF,          dsd_lsbf);
     REGISTER_ENCDEC (DSD_MSBF,          dsd_msbf);
     REGISTER_ENCDEC (DSD_LSBF_PLANAR,   dsd_lsbf_planar);

@@ -2662,6 +2662,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("Xbox Media Audio 2"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_DOP_S24LE,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "dop_s24le",
+        .long_name = NULL_IF_CONFIG_SMALL("DoP (DSD-over-PCM); signed 24-bit little-endian"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+    },
 
     /* subtitle codecs */
     {
