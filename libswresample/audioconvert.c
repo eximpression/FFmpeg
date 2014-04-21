@@ -173,8 +173,10 @@ AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
     AudioConvert *ctx;
     conv_func_type *f = fmt_pair_to_conv_functions[av_get_packed_sample_fmt(out_fmt) + AV_SAMPLE_FMT_NB*av_get_packed_sample_fmt(in_fmt)];
 
-    if (!f)
+    if (!f) {
+        av_log(0, AV_LOG_ERROR, "cannot convert %s to %s\n", av_get_sample_fmt_name(in_fmt), av_get_sample_fmt_name(out_fmt));
         return NULL;
+    }
     ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
         return NULL;
