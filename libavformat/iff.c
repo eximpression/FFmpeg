@@ -297,7 +297,7 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
         case MKTAG('F','S',' ',' '):
             if (size < 4)
                 return AVERROR_INVALIDDATA;
-            st->codec->sample_rate = avio_rb32(pb) / 8;
+            st->codec->sample_rate = avio_rb32(pb);
             break;
 
         case MKTAG('I','D','3',' '):
