@@ -116,7 +116,8 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc, int flags)
         blkalign = enc->block_align;
     } else
         blkalign = bps * enc->channels / av_gcd(8, bps);
-    if (enc->codec_id == AV_CODEC_ID_PCM_U8 ||
+    if (enc->codec_id == AV_CODEC_ID_DOP_S24LE ||
+        enc->codec_id == AV_CODEC_ID_PCM_U8 ||
         enc->codec_id == AV_CODEC_ID_PCM_S24LE ||
         enc->codec_id == AV_CODEC_ID_PCM_S32LE ||
         enc->codec_id == AV_CODEC_ID_PCM_F32LE ||
