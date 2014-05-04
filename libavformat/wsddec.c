@@ -123,7 +123,7 @@ static int wsd_read_header(AVFormatContext *s)
 
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id    = s->iformat->raw_codec_id;
-    st->codec->sample_rate = avio_rb32(pb) / 8;
+    st->codec->sample_rate = avio_rb32(pb);
     avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
     st->duration = av_smpte_timecode_to_timestamp(playback_time, st->time_base);
     avio_skip(pb, 4);
