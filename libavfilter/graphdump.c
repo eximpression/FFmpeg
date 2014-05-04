@@ -28,6 +28,25 @@
 #include "avfiltergraph.h"
 #include "internal.h"
 
+#include "internal.h"
+
+static void dump_formats(AVBPrint *buf, const AVFilterFormats *s, const char *name, int is_fmt)
+{
+    int i;
+    if (!s || !s->nb_formats)
+        return;
+
+    av_bprintf(buf, " %s{", name);
+    for (i = 0; i < s->nb_formats; i++) {
+        if (is_fmt) {
+            av_bprintf(buf, i ? ",%s" : "%s", av_get_sample_fmt_name(s->formats[i]));
+        } else {
+            av_bprintf(buf, i ? ",%i" : "%i", s->formats[i]);
+        }
+    }
+    av_bprintf(buf, "}");
+}
+
 static int print_link_prop(AVBPrint *buf, AVFilterLink *link)
 {
     char *format;
@@ -51,6 +70,11 @@ static int print_link_prop(AVBPrint *buf, AVFilterLink *link)
             format = av_x_if_null(av_get_sample_fmt_name(link->format), "?");
             av_bprintf(buf, "[%dHz %s:%s]",
                        (int)link->sample_rate, format, layout);
+
+            dump_formats(buf, link->in_formats, "in_formats", 1);
+            dump_formats(buf, link->out_formats, "out_formats", 1);
+            dump_formats(buf, link->in_samplerates, "in_samplerates", 0);
+            dump_formats(buf, link->out_samplerates, "out_samplerates", 0);
             break;
 
         default:
