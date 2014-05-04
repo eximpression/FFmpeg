@@ -109,6 +109,12 @@ static int query_formats(AVFilterContext *ctx)
     if(out_rate > 0) {
         int ratelist[] = { out_rate, -1 };
         out_samplerates = ff_make_format_list(ratelist);
+    } else if (inlink->in_formats && inlink->in_formats->nb_formats && inlink->in_formats->formats[0] == AV_SAMPLE_FMT_DSD &&
+               outlink->out_formats && outlink->out_formats->nb_formats && (outlink->out_formats->formats[0] != AV_SAMPLE_FMT_DSD && outlink->out_formats->formats[0] != AV_SAMPLE_FMT_DSDP) &&
+               !outlink->out_samplerates->nb_formats) {
+        /* when converting DSD->PCM _and_ no output sample rate is specified, limit the sample rate output */
+        int ratelist[] = { inlink->in_samplerates->formats[0] / swr_get_dsd2pcm_sr_factor(aresample->swr), -1};
+        out_samplerates = ff_make_format_list(ratelist);
     } else {
         out_samplerates = ff_all_samplerates();
     }
