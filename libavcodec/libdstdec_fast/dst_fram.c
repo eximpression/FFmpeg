@@ -1,3 +1,5 @@
+#define DUMP_FRAME 0
+#define DUMP_FINAL 0
 /***********************************************************************
 MPEG-4 Audio RM Module
 Lossless coding of 1-bit oversampled audio - DST (Direct Stream Transfer)
@@ -70,6 +72,8 @@ Changes:
 #include "dst_fram.h"
 #include "unpack_dst.h"
 
+#include "libavutil/avassert.h"
+
 /*============================================================================*/
 /*       CONSTANTS                                                            */
 /*============================================================================*/
@@ -94,11 +98,13 @@ static __inline void LT_ACDecodeBit_Init(ACData *AC, uint8_t *cb, int fs)
         if (AC->cbptr < fs)
         {
             AC->C |= cb[AC->cbptr];
+//av_log(0,0, "AC->C |=  cb[%i] (0x%x)\n", AC->cbptr, cb[AC->cbptr]);
         }
     }
+ //   av_log(0,0, "|INIT| AC->A=%i, AC->C=%i\n", AC->A, AC->C);
 }
   
-static __inline void LT_ACDecodeBit_Decode(ACData *AC, uint8_t *b, int p, uint8_t *cb, int fs)
+static __inline void LT_ACDecodeBit_Decode(ACData *AC, uint8_t *b, int p, uint8_t *cb, int fs, const char *name)
 {
     unsigned int ap;
     unsigned int h;
@@ -131,10 +137,12 @@ static __inline void LT_ACDecodeBit_Decode(ACData *AC, uint8_t *b, int p, uint8_
         }
         AC->cbptr++;
     }
+ //   av_log(0,0, "|AC|%8s|v=%8i         p=%5i, AC->A=0x%08x, AC->C=%5i\n", name, *b, p, AC->A, AC->C);
 }
 
 static __inline void LT_ACDecodeBit_Flush(ACData *AC, uint8_t *b, int p, uint8_t *cb, int fs)
 {
+ //   av_log(0,0,"ACFLUSH\n");
     AC->Init = 1;
     if (AC->cbptr < fs - 7)
     {
@@ -254,6 +262,7 @@ static void LT_InitCoefTablesI(ebunch *D, int16_t ICoefI[2 * MAX_CHANNELS][16][2
 			{
                 k = 0;
             }
+//av_log(0,0,"[%i]total %i\n", FilterLength, k);
             for (i = 0; i < 256; i++)
             {
                 int cvalue = 0;
@@ -312,6 +321,29 @@ static void LT_InitStatus(ebunch *D, uint8_t Status[MAX_CHANNELS][16])
         }
     }
 }
+
+static void print_filter(int16_t table[2 * MAX_CHANNELS][16][256], int nb_filters, const uint8_t status[MAX_CHANNELS][16], int nb_channels)
+{
+    int i, j, k;
+    for (i = 0; i < nb_filters; i++) {
+        for (j = 0; j < 16; j++) {
+            av_log(0,0, "\nfilter[%i][%i]:", i, j);
+            for (k = 0; k < 256; k++)
+                av_log(0,0, " %4i", table[i][j][k]);
+        }
+        av_log(0,0, "");
+    }
+
+    for (i = 0; i < nb_channels; i++) {
+        av_log(0,0,"\nstatus[%i]: ", i);
+        for (j = 0; j < 16; j++)
+            av_log(0,0," %02x", status[i][j]);
+        av_log(0,0,"\n");
+    }
+    av_log(0,0,"\n");
+}
+
+
 
 #if 0
 static int16_t LT_RunFilterI(int16_t FilterTable[16][256], uint8_t ChannelStatus[16])
@@ -412,6 +444,13 @@ int DST_FramDSTDecode(uint8_t *DSTdata, uint8_t *MuxedDSDdata, int FrameSizeInBy
     const int NrOfChannels = D->FrameHdr.NrOfChannels;
     uint8_t   *MuxedDSD = MuxedDSDdata;
 
+#if DUMP_FRAME
+    {
+    static int frame = 0;
+    av_log(0,0,"--- frame %i ---\n", frame++);
+    }
+#endif
+
     D->FrameHdr.FrameNr       = FrameCnt;
     D->FrameHdr.CalcNrOfBytes = FrameSizeInBytes;
     D->FrameHdr.CalcNrOfBits  = D->FrameHdr.CalcNrOfBytes * 8;
@@ -444,8 +483,14 @@ int DST_FramDSTDecode(uint8_t *DSTdata, uint8_t *MuxedDSDdata, int FrameSizeInBy
         //LT_InitCoefTablesU(D, LT_ICoefU);
         LT_InitStatus(D, LT_Status);
 
+  //              { int i; av_log(0,0,"status[%i]: ", ChNr); for (i = 0; i < 16; i++) av_log(0,0," %02x", LT_Status[ChNr][i]); av_log(0,0,"\n"); }
+
+//av_log(0,0,"NrOfFilters: %i\n",  D->FrameHdr.NrOfFilters);
+        //print_filter(LT_ICoefI, D->FrameHdr.NrOfFilters, LT_Status, NrOfChannels);
+
         LT_ACDecodeBit_Init(&AC, D->AData, D->ADataLen);
-        LT_ACDecodeBit_Decode(&AC, &ACError, Reverse7LSBs(D->FrameHdr.ICoefA[0][0]), D->AData, D->ADataLen);
+//av_log(0,0," XX=%i, %i\n", D->FrameHdr.ICoefA[0][0], Reverse7LSBs(D->FrameHdr.ICoefA[0][0]));
+        LT_ACDecodeBit_Decode(&AC, &ACError, Reverse7LSBs(D->FrameHdr.ICoefA[0][0]), D->AData, D->ADataLen, "ER");
 
         memset(MuxedDSD, 0, NrOfBitsPerCh * NrOfChannels / 8); 
         for (BitNr = 0; BitNr < NrOfBitsPerCh; BitNr++)
@@ -461,6 +506,7 @@ int DST_FramDSTDecode(uint8_t *DSTdata, uint8_t *MuxedDSDdata, int FrameSizeInBy
 
                 /* Calculate output value of the FIR filter */
                 LT_RUN_FILTER_I(LT_ICoefI[Filter], LT_Status[ChNr]);
+//av_log(0,0,"Filter=%i, Ch=%i, Predict:%i\n", Filter, ChNr, Predict);
                 //LT_RUN_FILTER_U(LT_ICoefU[Filter], LT_Status[ChNr]);
                 //Predict = LT_RunFilterI(LT_ICoefI[Filter], LT_Status[ChNr]);
                 //Predict = LT_RunFilterU(LT_ICoefU[Filter], LT_Status[ChNr]);
@@ -468,15 +514,22 @@ int DST_FramDSTDecode(uint8_t *DSTdata, uint8_t *MuxedDSDdata, int FrameSizeInBy
                 /* Arithmetic decode the incoming bit */
                 if ((D->FrameHdr.HalfProb[ChNr]/* == 1*/) && (BitNr < D->FrameHdr.NrOfHalfBits[ChNr]))
                 {
-                    LT_ACDecodeBit_Decode(&AC, &Residual, AC_PROBS / 2, D->AData, D->ADataLen);
+                    LT_ACDecodeBit_Decode(&AC, &Residual, AC_PROBS / 2, D->AData, D->ADataLen, "R1");
+//if (BitNr < 5) av_log(0,0,"128 Residual=%i NrHalfBits[ch]=%i\n", Residual, D->FrameHdr.NrOfHalfBits[ChNr]);
                 }
                 else
                 {
                     const int table4bit = D->FrameHdr.Ptable4Bit[ChNr][BitNr];
+
                     const int PtableIndex = LT_ACGetPtableIndex(Predict, D->FrameHdr.PtableLen[table4bit]);
 
-                    LT_ACDecodeBit_Decode(&AC, &Residual, D->P_one[table4bit][PtableIndex], D->AData, D->ADataLen);
+                    LT_ACDecodeBit_Decode(&AC, &Residual, D->P_one[table4bit][PtableIndex], D->AData, D->ADataLen, "R2");
+// av_log(0,0,"table:%i/ Ptabl: %i, residual:%i\n", table4bit, PtableIndex, Residual);
                 }
+
+#if DUMP_FINAL
+av_log(0,0,"(%5i/%i) %i p:%i\n", BitNr, ChNr, Residual, Predict);
+#endif
 
                 /* Channel bit depends on the predicted bit and BitResidual[][] */
                 BitVal = ((((uint16_t)Predict) >> 15) ^ Residual) & 1;
@@ -492,8 +545,10 @@ int DST_FramDSTDecode(uint8_t *DSTdata, uint8_t *MuxedDSDdata, int FrameSizeInBy
                     st[1] = (st[1] << 1) | ((st[0] >> 31) & 1);
                     st[0] = (st[0] << 1) | BitVal;
                 }
+ //               { int i; av_log(0,0,"status[%i]: ", ChNr); for (i = 0; i < 16; i++) av_log(0,0," %02x", LT_Status[ChNr][i]); av_log(0,0,"\n"); }
             }
         }
+
 
         /* Flush the arithmetic decoder */
         LT_ACDecodeBit_Flush(&AC, &ACError, 0, D->AData, D->ADataLen);
