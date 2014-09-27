@@ -330,7 +330,7 @@ library:
 @item id RoQ                    @tab X @tab X
     @tab Used in Quake III, Jedi Knight 2 and other computer games.
 @item IEC61937 encapsulation @tab X @tab X
-@item IFF                       @tab   @tab X
+@item IFF                       @tab X @tab X
     @tab Interchange File Format
 @item iLBC                      @tab X @tab X
 @item Interplay MVE             @tab   @tab X
