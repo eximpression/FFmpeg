@@ -63,7 +63,7 @@ static int dsf_read_header(AVFormatContext *s)
     DSFContext *dsf = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st;
-    uint64_t id3pos;
+    uint64_t id3pos, expected_size, data_size;
     unsigned int channel_type;
 
     avio_skip(pb, 4);
@@ -116,7 +116,8 @@ static int dsf_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    avio_skip(pb, 8);
+    expected_size = (avio_rl64(pb) / 8) * st->codec->channels;
+
     st->codec->block_align = avio_rl32(pb);
     if (st->codec->block_align > INT_MAX / st->codec->channels) {
         avpriv_request_sample(s, "block_align overflow");
@@ -130,8 +131,16 @@ static int dsf_read_header(AVFormatContext *s)
     dsf->data_end = avio_tell(pb);
     if (avio_rl32(pb) != MKTAG('d', 'a', 't', 'a'))
         return AVERROR_INVALIDDATA;
-    dsf->data_end += avio_rl64(pb);
+    data_size = avio_rl64(pb);
 
+    if (expected_size > data_size) {
+        av_log(s, AV_LOG_WARNING, "number of reported samples exceeds data chunk size\n");
+        dsf->data_end += data_size;
+    } else {
+        if (data_size != (expected_size + 0xFFF) & ~0xFFF)
+            av_log(s, AV_LOG_WARNING, "unneccessary padding detected\n");
+        dsf->data_end += 12 + expected_size;
+    }
     return 0;
 }
 

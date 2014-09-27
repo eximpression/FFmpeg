@@ -49,6 +49,11 @@ static int write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
+    if (st->codec->frame_size != 4096) {
+        av_log(s, AV_LOG_ERROR, "frame_size != 4096\n");
+        return AVERROR(EINVAL);
+    }
+
     avio_wl32(pb, MKTAG('D','S','D',' '));
     avio_wl64(pb, 28);
     avio_skip(pb, 16);
@@ -62,7 +67,7 @@ static int write_header(AVFormatContext *s)
     avio_wl32(pb, st->codec->sample_rate);
     avio_wl32(pb, ff_codec_get_tag(codec_dsf_tags, st->codec->codec_id));
     avio_skip(pb, 8);
-    avio_wl32(pb, 4096);
+    avio_wl32(pb, st->codec->frame_size);
     ffio_fill(pb, 0, 4);
 
     avio_wl32(pb, MKTAG('d','a','t','a'));
@@ -74,12 +79,7 @@ static int write_trailer(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     AVStream *st = s->streams[0];
-    int64_t samples, data_end, total_size;
-
-    /* pad data chunk to 4096 bytes */
-    samples = avio_tell(pb) - 0x5C;
-    if ((samples & 0xFFF))
-        ffio_fill(pb, 0, 0x1000 - (samples & 0xFFF));
+    int64_t data_end, total_size;
 
     data_end  = avio_tell(pb);
 
@@ -89,14 +89,17 @@ static int write_trailer(AVFormatContext *s)
     avio_seek(pb, 0xC, SEEK_SET);
     avio_wl64(pb, total_size);
 
+    /* id3v2 offset */
     avio_seek(pb, 0x14, SEEK_SET);
-    avio_wl64(pb, data_end); /* id3v2 offset */
+    avio_wl64(pb, data_end);
 
+    /* total 1-bit samples per channel */
     avio_seek(pb, 0x40, SEEK_SET);
-    avio_wl64(pb, (samples / st->codec->channels) * 8);
+    avio_wl64(pb, ((data_end - 0x5c) / st->codec->channels) * 8);
 
+    /* data chunk size */
     avio_seek(pb, 0x54, SEEK_SET);
-    avio_wl64(pb, data_end - 0x50); /* data chunk size */
+    avio_wl64(pb, data_end - 0x50);
     return 0;
 }
 
