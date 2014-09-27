@@ -139,6 +139,7 @@ OBJS-$(CONFIG_DIRAC_MUXER)               += rawenc.o
 OBJS-$(CONFIG_DNXHD_DEMUXER)             += dnxhddec.o rawdec.o
 OBJS-$(CONFIG_DNXHD_MUXER)               += rawenc.o
 OBJS-$(CONFIG_DSF_DEMUXER)               += dsfdec.o
+OBJS-$(CONFIG_DSF_MUXER)                 += dsfenc.o
 OBJS-$(CONFIG_DSICIN_DEMUXER)            += dsicin.o
 OBJS-$(CONFIG_DSS_DEMUXER)               += dss.o
 OBJS-$(CONFIG_DTSHD_DEMUXER)             += dtshddec.o
