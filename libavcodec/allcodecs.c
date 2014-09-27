@@ -567,6 +567,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(LIBCELT,           libcelt);
     REGISTER_DECODER(LIBDCADEC,         libdcadec)
     REGISTER_ENCDEC (LIBDST,            libdst);
+    REGISTER_DECODER(LIBDST_FAST,       libdst_fast);
     REGISTER_ENCODER(LIBFAAC,           libfaac);
     REGISTER_ENCDEC (LIBFDK_AAC,        libfdk_aac);
     REGISTER_ENCDEC (LIBGSM,            libgsm);
