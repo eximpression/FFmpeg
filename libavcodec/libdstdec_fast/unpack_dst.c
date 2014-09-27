@@ -1,3 +1,5 @@
+#define DUMP_COEFF 0
+#define DUMP_HEADER 0
 /***********************************************************************
 MPEG-4 Audio RM Module
 Lossless coding of 1-bit oversampled audio - DST (Direct Stream Transfer)
@@ -62,6 +64,7 @@ Changes:
 #include <memory.h>
 #include "unpack_dst.h"
 
+#include "libavutil/avassert.h"
 
 /*============================================================================*/
 /*       Forward declaration function prototypes                              */
@@ -153,6 +156,7 @@ int RiceDecode(StrData* S, int m)
   int RunLength;
   int Sign;
 	int return_value;
+
 
   /* Retrieve run length code */
   RunLength = 0;
@@ -248,18 +252,27 @@ int ReadTableSegmentData(StrData *SD,
   int EndOfChannel;
 	int return_value;
 
+#if DUMP_HEADER
+  av_log(0,0,"ReadTableSegmentData\n");
+#endif
   MaxSegSize = FrameLen - MinSegLen/8;
 
   return_value = FIO_BitGetIntUnsigned(SD, 1, SameSegAllCh);
 	if (return_value == -1) {
 		return -1;
 	}
+#if DUMP_HEADER
+  av_log(0,0,"  [%5i] SameSegAllCh:%i\n", get_in_bitcount(SD), *SameSegAllCh);
+#endif
   if (*SameSegAllCh == 1)
   {
     return_value = FIO_BitGetIntUnsigned(SD, 1, &EndOfChannel);
 		if (return_value == -1) {
 			return -1;
 		}
+#if DUMP_HEADER
+    av_log(0,0,"  [%5i] EndOfChannel:%i\n", get_in_bitcount(SD), EndOfChannel);
+#endif
     while (EndOfChannel == 0)
     {
       if (SegNr >= MaxNrOfSegs)
@@ -274,6 +287,9 @@ int ReadTableSegmentData(StrData *SD,
 				if (return_value == -1) {
 					return -1;
 				}
+#if DUMP_HEADER
+        av_log(0,0,"  Resolution(%i):%i\n", NrOfBits, S->Resolution);
+#endif
         if ((S->Resolution == 0) || (S->Resolution > FrameLen - MinSegLen/8))
         {
           fprintf(stderr, "ERROR: Invalid segment resolution!\n");
@@ -286,6 +302,9 @@ int ReadTableSegmentData(StrData *SD,
 			if (return_value == -1) {
 				return -1;
 			}
+#if DUMP_HEADER
+        av_log(0,0,"  S->SegmentLen[0][SegNr=%i](%i):%i\n", SegNr, NrOfBits, S->SegmentLen[0][SegNr]);
+#endif
 
       if ((S->Resolution * 8 * S->SegmentLen[0][SegNr] < MinSegLen) ||
           (S->Resolution * 8 * S->SegmentLen[0][SegNr] > FrameLen * 8 - DefinedBits - MinSegLen))
@@ -300,6 +319,9 @@ int ReadTableSegmentData(StrData *SD,
 			if (return_value == -1) {
 				return -1;
 			}
+#if DUMP_HEADER
+      av_log(0,0,"  EndOfChannel:%i\n", EndOfChannel);
+#endif
     }
     S->NrOfSegments[0]      = SegNr + 1;
     S->SegmentLen[0][SegNr] = 0;
@@ -326,6 +348,9 @@ int ReadTableSegmentData(StrData *SD,
 			if (return_value == -1) {
 				return -1;
 			}
+#if DUMP_HEADER
+      av_log(0,0,"  EndOfChannel:%i\n", EndOfChannel);
+#endif
       if (EndOfChannel == 0)
       {
         if (ResolRead == 0)
@@ -400,6 +425,10 @@ int CopySegmentData(FrameHeader *FH)
 
   int *dst = FH->PSeg.NrOfSegments, *src = FH->FSeg.NrOfSegments;
 
+#if DUMP_HEADER
+  av_log(0,0,"CopySegmentData\n");
+#endif
+
   FH->PSeg.Resolution = FH->FSeg.Resolution;
   FH->PSameSegAllCh   = 1;
   for (ChNr = 0; ChNr < FH->NrOfChannels; ChNr++)
@@ -453,10 +482,16 @@ int CopySegmentData(FrameHeader *FH)
 int ReadSegmentData(StrData *SD, FrameHeader *FH)
 {
 	int return_value;
+#if DUMP_HEADER
+  av_log(0,0,"ReadSegmentData\n");
+#endif
   return_value = FIO_BitGetIntUnsigned(SD, 1, &FH->PSameSegAsF);
 	if (return_value == -1) {
 		return -1;
 	}
+#if DUMP_HEADER
+  av_log(0,0,"  [%5i] FH->PSameSegAsF=%i\n", get_in_bitcount(SD), FH->PSameSegAsF);
+#endif
   return_value = ReadTableSegmentData(SD,
                        FH->NrOfChannels, 
                        FH->MaxFrameLen, 
@@ -510,15 +545,26 @@ int ReadTableMappingData(StrData *SD,
   int NrOfBits    = 1;
   int SegNr;
 
+#if DUMP_HEADER
+  av_log(0,0,"ReadTableMappingData\n");
+#endif
+
   S->Table4Segment[0][0] = 0;
 
   FIO_BitGetIntUnsigned(SD, 1, SameMapAllCh);
+#if DUMP_HEADER
+  av_log(0,0,"  [%5i]SameMapAllCh:%i\n", get_in_bitcount(SD), *SameMapAllCh);
+#endif
+  
   if (*SameMapAllCh == 1)
   {
     for (SegNr = 1; SegNr < S->NrOfSegments[0]; SegNr++)
     {
       NrOfBits = Log2RoundUp(CountTables);
       FIO_BitGetIntUnsigned(SD, NrOfBits, &S->Table4Segment[0][SegNr]);
+#if DUMP_HEADER
+      av_log(0,0," [%5i]  S->Table4Segment[0][SegNr=%i](%i) = %i\n", get_in_bitcount(SD), SegNr, NrOfBits, S->Table4Segment[0][SegNr]);
+#endif
 
       if (S->Table4Segment[0][SegNr] == CountTables)
       {
@@ -553,6 +599,9 @@ int ReadTableMappingData(StrData *SD,
         {
           NrOfBits = Log2RoundUp(CountTables);
           FIO_BitGetIntUnsigned(SD, NrOfBits, &S->Table4Segment[ChNr][SegNr]);
+#if DUMP_HEADER
+          av_log(0,0,"  [%5i] S->Table4Segment[ChNr=%i][SegNr=%i](%i) = %i\n", get_in_bitcount(SD), ChNr, SegNr, NrOfBits, S->Table4Segment[ChNr][SegNr]);
+#endif
 
           if (S->Table4Segment[ChNr][SegNr] == CountTables)
           {
@@ -572,6 +621,9 @@ int ReadTableMappingData(StrData *SD,
     fprintf(stderr, "ERROR: Too many tables for this frame!\n");
 		return -1;
   }
+#if DUMP_HEADER
+  av_log(0,0,"  :NbOfTables=%i\n", CountTables);
+#endif
   *NrOfTables = CountTables;
 	return 0;
 }
@@ -648,10 +700,17 @@ int ReadMappingData(StrData *SD, FrameHeader *FH)
 {
   int j;
 	int return_value;
+#if DUMP_HEADER
+  av_log(0,0,"ReadMappingData\n");
+#endif
   return_value = FIO_BitGetIntUnsigned(SD, 1, &FH->PSameMapAsF);
 	if (return_value == -1) {
 		return -1;
 	}
+#if DUMP_HEADER
+  av_log(0,0," [%5i] FH->PSameMapAsF:%i\n", get_in_bitcount(SD), FH->PSameMapAsF);
+#endif
+
   return_value = ReadTableMappingData(SD, FH->NrOfChannels, FH->MaxNrOfFilters, &FH->FSeg, &FH->NrOfFilters, &FH->FSameMapAllCh);
 	if (return_value == -1) {
 		return -1;
@@ -671,12 +730,19 @@ int ReadMappingData(StrData *SD, FrameHeader *FH)
 		}
   }
 
+#if DUMP_HEADER
+  av_log(0,0, "Half Probs\n");
+#endif
+
   for (j = 0; j < FH->NrOfChannels; j++)
   {
     return_value = FIO_BitGetIntUnsigned(SD, 1, &FH->HalfProb[j]);
 		if (return_value == -1) {
 			return -1;
 		}
+#if DUMP_HEADER
+    av_log(0,0,"  FH->HalfProb[%i]:%i\n", j, FH->HalfProb[j]);
+#endif
   }
 	return 0;
 }
@@ -715,19 +781,32 @@ int ReadFilterCoefSets(StrData     *SD,
   int TapNr;
   int x;
 
+#if DUMP_HEADER
+  av_log(0,0,"ReadFilterCoefSets\n");
+#endif
+
   /* Read the filter parameters */
   for(FilterNr = 0; FilterNr < FH->NrOfFilters; FilterNr++)
   {
     FIO_BitGetIntUnsigned(SD, SIZE_CODEDPREDORDER, &FH->PredOrder[FilterNr]);
+#if DUMP_HEADER
+    av_log(0,0,"  FH->PredOrder[FilterNr=%i](%i)=%i\n", FilterNr, SIZE_CODEDPREDORDER, FH->PredOrder[FilterNr]);
+#endif
     FH->PredOrder[FilterNr]++;
 
     FIO_BitGetIntUnsigned(SD, 1, &CF->Coded[FilterNr]);
+#if DUMP_HEADER
+    av_log(0,0,"  CD->Coded[FilterNr=%i]=%i\n", FilterNr, CF->Coded[FilterNr]);
+#endif
     if (CF->Coded[FilterNr] == 0)
     {
       CF->BestMethod[FilterNr] = -1;
       for(CoefNr = 0; CoefNr < FH->PredOrder[FilterNr]; CoefNr++)
       {
         FIO_BitGetShortSigned(SD, SIZE_PREDCOEF, &FH->ICoefA[FilterNr][CoefNr]);
+#if DUMP_COEFF
+        av_log(0,0,"  FH->ICoefA[FilterNr=%i][CoefNr=%i](%i)=%i\n", FilterNr, CoefNr, SIZE_PREDCOEF, FH->ICoefA[FilterNr][CoefNr]);
+#endif
       }
     }
     else
@@ -735,6 +814,9 @@ int ReadFilterCoefSets(StrData     *SD,
       int bestmethod;
 
       FIO_BitGetIntUnsigned(SD, SIZE_RICEMETHOD, &CF->BestMethod[FilterNr]);
+#if DUMP_HEADER
+      av_log(0,0, "  [%5i]CF->BestMethod[FilterNr=%i](%i)=%i\n", get_in_bitcount(SD), FilterNr, SIZE_RICEMETHOD, CF->BestMethod[FilterNr]);
+#endif
       bestmethod = CF->BestMethod[FilterNr];
       if (CF->CPredOrder[bestmethod] >= FH->PredOrder[FilterNr])
       {
@@ -745,24 +827,34 @@ int ReadFilterCoefSets(StrData     *SD,
       for(CoefNr = 0; CoefNr < CF->CPredOrder[bestmethod]; CoefNr++)
       {
         FIO_BitGetShortSigned(SD, SIZE_PREDCOEF, &FH->ICoefA[FilterNr][CoefNr]);
+#if DUMP_COEFF
+        av_log(0,0,"  [%5i]FH->ICoefA[FilterNr=%i][CoefNr=%i](%i)=%i\n", get_in_bitcount(SD), FilterNr, CoefNr, SIZE_PREDCOEF, FH->ICoefA[FilterNr][CoefNr]);
+#endif
       }
 
       FIO_BitGetIntUnsigned(SD, SIZE_RICEM, &CF->m[FilterNr][bestmethod]);
+#if DUMP_HEADER
+      av_log(0, 0, "  CF->m[FilterNr=%i][bestmethod=%i](%i)=%i\n", FilterNr, bestmethod, SIZE_RICEM, CF->m[FilterNr][bestmethod]);
+#endif
       
       for(CoefNr = CF->CPredOrder[bestmethod]; CoefNr < FH->PredOrder[FilterNr]; CoefNr++)
       {
         for (TapNr = 0, x = 0; TapNr < CF->CPredOrder[bestmethod]; TapNr++)
         {
+ //         av_log(0,0, "  x=%i, a=%i, b=%i\n", x, CF->CPredCoef[bestmethod][TapNr], FH->ICoefA[FilterNr][CoefNr - TapNr - 1]);
           x += CF->CPredCoef[bestmethod][TapNr] * FH->ICoefA[FilterNr][CoefNr - TapNr - 1];
         }
+ //       av_log(0,0, "  x=%i\n", x);
 
         if (x >= 0)
         {
           c = RiceDecode(SD, CF->m[FilterNr][bestmethod]) - (x+4)/8;
+          //av_log(0,0, "  RiceDecode...\n");
         }
         else
         {
           c = RiceDecode(SD, CF->m[FilterNr][bestmethod]) + (-x+3)/8;
+          //av_log(0,0, "  RiceDecode +ve...\n");
         }
 
         if ((c < -(1<<(SIZE_PREDCOEF-1))) || (c >= (1<<(SIZE_PREDCOEF-1))))
@@ -773,6 +865,9 @@ int ReadFilterCoefSets(StrData     *SD,
         else
         {
           FH->ICoefA[FilterNr][CoefNr] = (int16_t) c;
+#if DUMP_COEFF
+          av_log(0,0, "  [%5i]coeff[%3i]=%i\n", get_in_bitcount(SD), CoefNr, c);
+#endif
         }
       }
     }
@@ -784,6 +879,9 @@ int ReadFilterCoefSets(StrData     *SD,
   for (ChNr = 0; ChNr < NrOfChannels; ChNr++)
   {
     FH->NrOfHalfBits[ChNr] = FH->PredOrder[FH->FSeg.Table4Segment[ChNr][0]];
+#if DUMP_HEADER
+av_log(0,0, "HalfBits: %i\n",  FH->NrOfHalfBits[ChNr]);
+#endif
   }
 
 	return 0;
@@ -819,15 +917,25 @@ int ReadProbabilityTables(StrData      *SD,
   int TapNr;
   int x;
 
+#if DUMP_HEADER
+  av_log(0,0, "ReadProbabilityTables");
+#endif
+
   /* Read the data of all probability tables (table entries) */
   for(PtableNr = 0; PtableNr < FH->NrOfPtables; PtableNr++)
   {
     FIO_BitGetIntUnsigned(SD, AC_HISBITS, &FH->PtableLen[PtableNr]);
+#if DUMP_HEADER
+    av_log(0,0,"  FH->PtableLen[PtableNr=%i](%i)=%i\n", PtableNr, AC_HISBITS, FH->PtableLen[PtableNr]);
+#endif
     FH->PtableLen[PtableNr]++;
 
     if (FH->PtableLen[PtableNr] > 1)
     {
       FIO_BitGetIntUnsigned(SD, 1, &CP->Coded[PtableNr]);
+#if DUMP_HEADER
+      av_log(0,0, "  CP->Coded[PtableNr=%i]=%i\n", PtableNr, CP->Coded[PtableNr]);
+#endif
       
       if (CP->Coded[PtableNr] == 0)
       {
@@ -835,6 +943,9 @@ int ReadProbabilityTables(StrData      *SD,
         for(EntryNr = 0; EntryNr < FH->PtableLen[PtableNr]; EntryNr++)
         {
           FIO_BitGetIntUnsigned(SD, AC_BITS - 1, &P_one[PtableNr][EntryNr]);
+#if DUMP_COEFF
+          av_log(0,0,"  P_one[PtableNr=%i][EntryNr=%i](%i)=%i\n", PtableNr, EntryNr, AC_BITS - 1, P_one[PtableNr][EntryNr]);
+#endif
           P_one[PtableNr][EntryNr]++;
         }
       }
@@ -842,6 +953,9 @@ int ReadProbabilityTables(StrData      *SD,
       {
         int bestmethod;
         FIO_BitGetIntUnsigned(SD, SIZE_RICEMETHOD, &CP->BestMethod[PtableNr]);
+#if DUMP_HEADER
+        av_log(0,0, "  [%5i]CP->BestMethod[PtableNr=%i](%i)=%i\n", get_in_bitcount(SD), PtableNr, SIZE_RICEMETHOD, CP->BestMethod[PtableNr]);
+#endif
         bestmethod = CP->BestMethod[PtableNr];
         if (CP->CPredOrder[bestmethod] >= FH->PtableLen[PtableNr])
         {
@@ -852,15 +966,23 @@ int ReadProbabilityTables(StrData      *SD,
         for(EntryNr = 0; EntryNr < CP->CPredOrder[bestmethod]; EntryNr++)
         {
           FIO_BitGetIntUnsigned(SD, AC_BITS - 1, &P_one[PtableNr][EntryNr]);
+#if DUMP_COEFF
+          av_log(0,0, "  [%5i]P_one[PtableNr=%i][EntryNr=%i](%i)=%i\n", get_in_bitcount(SD), PtableNr, EntryNr, AC_BITS - 1, P_one[PtableNr][EntryNr]);
+#endif
           P_one[PtableNr][EntryNr]++;
         }
 
         FIO_BitGetIntUnsigned(SD, SIZE_RICEM, &CP->m[PtableNr][bestmethod]);
+#if DUMP_HEADER
+        av_log(0,0, "  [%5i]CP->m[PtableNr=%i][bestmethod=%i](%i)=%i\n", get_in_bitcount(SD), PtableNr, bestmethod, SIZE_RICEM, CP->m[PtableNr][bestmethod]);
+#endif
+        
 
         for(EntryNr = CP->CPredOrder[bestmethod]; EntryNr < FH->PtableLen[PtableNr]; EntryNr++)
         {
           for (TapNr = 0, x = 0; TapNr < CP->CPredOrder[bestmethod]; TapNr++)
           {
+ //           av_log(0,0,  " x=%i, predcoeff=%i, p_one=%i\n", x, CP->CPredCoef[bestmethod][TapNr] , P_one[PtableNr][EntryNr - TapNr - 1]);
             x += CP->CPredCoef[bestmethod][TapNr] * P_one[PtableNr][EntryNr - TapNr - 1];
           }
 
@@ -881,6 +1003,9 @@ int ReadProbabilityTables(StrData      *SD,
           else
           {
             P_one[PtableNr][EntryNr] = c;
+#if DUMP_COEFF
+            av_log(0,0, "  [%5i]coeff[%3i]=%i (x=%i)\n", get_in_bitcount(SD), EntryNr, c, x);
+#endif
           }
         }
       }
@@ -932,6 +1057,10 @@ int ReadArithmeticCodedData(StrData       *SD,
   int j;
   int val;
 	int return_value;
+
+#if DUMP_HEADER
+  av_log(0,0, "ReadArithmeticCodedData...\n");
+#endif
 
   for(j = 0; j < ADataLen-31; j += 32)
   {
