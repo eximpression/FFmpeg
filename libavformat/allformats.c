@@ -152,7 +152,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(ICO,              ico);
     REGISTER_DEMUXER (IDCIN,            idcin);
     REGISTER_DEMUXER (IDF,              idf);
-    REGISTER_DEMUXER (IFF,              iff);
+    REGISTER_MUXDEMUX(IFF,              iff);
     REGISTER_MUXDEMUX(ILBC,             ilbc);
     REGISTER_MUXDEMUX(IMAGE2,           image2);
     REGISTER_MUXDEMUX(IMAGE2PIPE,       image2pipe);
