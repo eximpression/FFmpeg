@@ -38,6 +38,7 @@
 #include "libavcodec/dst.h"
 #include "avformat.h"
 #include "id3v2.h"
+#include "iff.h"
 #include "internal.h"
 
 #define ID_8SVX       MKTAG('8','S','V','X')
@@ -59,9 +60,7 @@
 #define ID_DEEP       MKTAG('D','E','E','P')
 #define ID_RGB8       MKTAG('R','G','B','8')
 #define ID_RGBN       MKTAG('R','G','B','N')
-#define ID_DSD        MKTAG('D','S','D',' ')
 #define ID_ANIM       MKTAG('A','N','I','M')
-#define ID_DST        MKTAG('D','S','T',' ')
 
 #define ID_FORM       MKTAG('F','O','R','M')
 #define ID_FRM8       MKTAG('F','R','M','8')
@@ -79,6 +78,12 @@
 #define ID_DPEL       MKTAG('D','P','E','L')
 #define ID_DLOC       MKTAG('D','L','O','C')
 #define ID_TVDC       MKTAG('T','V','D','C')
+
+const AVCodecTag ff_dsdiff_codec_tags[] = {
+    { AV_CODEC_ID_DSD_MSBF, ID_DSD },
+    { AV_CODEC_ID_DST,      ID_DST },
+    { AV_CODEC_ID_NONE, 0 },
+};
 
 #define LEFT    2
 #define RIGHT   4
@@ -159,13 +164,6 @@ static int iff_probe(AVProbeData *p)
     return 0;
 }
 
-static const AVCodecTag dsd_codec_tags[] = {
-    { AV_CODEC_ID_DSD_MSBF, ID_DSD },
-    { AV_CODEC_ID_DST,      ID_DST },
-    { AV_CODEC_ID_NONE, 0 },
-};
-
-
 #define DSD_SLFT MKTAG('S','L','F','T')
 #define DSD_SRGT MKTAG('S','R','G','T')
 #define DSD_MLFT MKTAG('M','L','F','T')
@@ -179,15 +177,11 @@ static const uint32_t dsd_stereo[]  = { DSD_SLFT, DSD_SRGT };
 static const uint32_t dsd_5point0[] = { DSD_MLFT, DSD_MRGT, DSD_C, DSD_LS, DSD_RS };
 static const uint32_t dsd_5point1[] = { DSD_MLFT, DSD_MRGT, DSD_C, DSD_LFE, DSD_LS, DSD_RS };
 
-typedef struct {
-    uint64_t layout;
-    const uint32_t * dsd_layout;
-} DSDLayoutDesc;
-
-static const DSDLayoutDesc dsd_channel_layout[] = {
-    { AV_CH_LAYOUT_STEREO,  dsd_stereo },
+const DSDLayoutDesc ff_dsdiff_channel_layout[] = {
+    { AV_CH_LAYOUT_STEREO,  dsd_stereo  },
     { AV_CH_LAYOUT_5POINT0, dsd_5point0 },
     { AV_CH_LAYOUT_5POINT1, dsd_5point1 },
+    { 0 },
 };
 
 static const uint64_t dsd_loudspeaker_config[] = {
@@ -249,6 +243,7 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
     int hour, min, sec, i, ret, config;
     int dsd_layout[6];
     ID3v2ExtraMeta *id3v2_extra_meta;
+    const DSDLayoutDesc *d;
 
     while (avio_tell(pb) + CHUNK_HEADER_SIZE(iff) <= eof) {
         uint32_t tag      = avio_rl32(pb);
@@ -279,8 +274,7 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
             }
             for (i = 0; i < st->codec->channels; i++)
                 dsd_layout[i] = avio_rl32(pb);
-            for (i = 0; i < FF_ARRAY_ELEMS(dsd_channel_layout); i++) {
-                const DSDLayoutDesc * d = &dsd_channel_layout[i];
+            for (d = ff_dsdiff_channel_layout; d->layout; d++) {
                 if (av_get_channel_layout_nb_channels(d->layout) == st->codec->channels &&
                     !memcmp(d->dsd_layout, dsd_layout, st->codec->channels * sizeof(uint32_t))) {
                     st->codec->channel_layout = d->layout;
@@ -293,7 +287,7 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
             if (size < 4)
                 return AVERROR_INVALIDDATA;
             tag = avio_rl32(pb);
-            st->codec->codec_id = ff_codec_get_id(dsd_codec_tags, tag);
+            st->codec->codec_id = ff_codec_get_id(ff_dsdiff_codec_tags, tag);
             if (!st->codec->codec_id) {
                 av_log(s, AV_LOG_ERROR, "'%c%c%c%c' compression is not supported\n",
                     tag&0xFF, (tag>>8)&0xFF, (tag>>16)&0xFF, (tag>>24)&0xFF);
