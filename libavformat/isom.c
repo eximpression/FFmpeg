@@ -452,6 +452,7 @@ static const AVCodecTag mp4_audio_types[] = {
     { AV_CODEC_ID_MP3ON4, AOT_L2   }, /* layer 2 */
     { AV_CODEC_ID_MP3ON4, AOT_L3   }, /* layer 3 */
     { AV_CODEC_ID_MP4ALS, AOT_ALS  }, /* MPEG-4 ALS */
+    { AV_CODEC_ID_DST,    AOT_DST  },
     { AV_CODEC_ID_NONE,   AOT_NULL },
 };
 
@@ -503,7 +504,9 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
                     "sample rate %d ext sample rate %d\n", st->codec->channels,
                     cfg.object_type, cfg.ext_object_type,
                     cfg.sample_rate, cfg.ext_sample_rate);
-            if (!(st->codec->codec_id = ff_codec_get_id(mp4_audio_types,
+            if (cfg.object_type == AOT_DST && !cfg.dst_coded)
+                st->codec->codec_id = AV_CODEC_ID_DSD_MSBF;
+            else if (!(st->codec->codec_id = ff_codec_get_id(mp4_audio_types,
                                                         cfg.object_type)))
                 st->codec->codec_id = AV_CODEC_ID_AAC;
         }
