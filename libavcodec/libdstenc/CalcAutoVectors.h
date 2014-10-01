@@ -60,6 +60,7 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "types.h"
 
 
@@ -67,7 +68,7 @@ Changes:
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-ENCODING_STATUS  CalcAutoVectors(/* in */
+ENCODING_STATUS  MANGLE(CalcAutoVectors)(/* in */
                                  unsigned char  BitStream[MAXCH][MAXCHBITS],
                                  int            ChannelFilter[MAXCH],
                                  int            NrOfChannelBits,

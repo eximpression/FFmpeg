@@ -60,13 +60,14 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "types.h"
 
 /*============================================================================*/
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-ENCODING_STATUS  OEM_FirQuantFCoefs(/* in */ 
+ENCODING_STATUS  MANGLE(OEM_FirQuantFCoefs)(/* in */ 
                                     float   FCoef[MAXCH][MAXPREDORDER],
                                     int     NrOfFilters,
                                     int     OptPredOrder[MAXCH],

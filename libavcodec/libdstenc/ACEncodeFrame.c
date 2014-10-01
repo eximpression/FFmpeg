@@ -118,7 +118,7 @@ static int Reverse7LSBs(int c);
  * Global parameter usage :
  * 
  *****************************************************************************/
-ENCODING_STATUS DST_EACEncodeFrame( /* in */
+ENCODING_STATUS MANGLE(DST_EACEncodeFrame)( /* in */
                                     unsigned char   BitP[MAXCH][MAXCHBITS],
                                     unsigned int    BitRes[MAXCH][MAXCHBITS/32],
                                     int             NrOfChannelBits,
@@ -138,7 +138,7 @@ ENCODING_STATUS DST_EACEncodeFrame( /* in */
   int               i, j, DWordNr,n;
   int               Temp;
   int               P_dstXbit;
-  int               DSDArea[11], ACArea[11], Area;
+  int               DSDArea[11], Area;
   int               Half_DSDframeSize = NrOfChannelBits / (8*2);
 
   /**********************/
@@ -245,8 +245,6 @@ ENCODING_STATUS DST_EACEncodeFrame( /* in */
       }
       BitNr++;
     }
-    
-    ACArea[j] = i; /* Keep the amount of encoded bit so far */
   }
 
 

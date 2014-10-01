@@ -78,7 +78,7 @@ Changes:
  * 
  *****************************************************************************/
 
-ENCODING_STATUS  DST_EACBitPLookUp( /* in */
+ENCODING_STATUS  MANGLE(DST_EACBitPLookUp)( /* in */
                                     int           ChannelFilter[MAXCH],
                                     int           ChannelPtable[MAXCH],
                                     int           NrOfChannelBits,

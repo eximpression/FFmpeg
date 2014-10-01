@@ -79,13 +79,14 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "conststr.h"
 
 /*============================================================================*/
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-ENCODING_STATUS  DST_StrfFrameToStream(
+ENCODING_STATUS  MANGLE(DST_StrfFrameToStream)(
   /* in */
   unsigned int   AData[MAXCH*(MAXCHBITS/32)],
   int            AritEncoded,

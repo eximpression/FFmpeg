@@ -73,7 +73,7 @@ Changes:
  * 
  */
 
-ENCODING_STATUS  CalcAutoVectors(/* in */
+ENCODING_STATUS  MANGLE(CalcAutoVectors)(/* in */
                                  unsigned char BitStream[MAXCH][MAXCHBITS],
                                  int           ChannelFilter[MAXCH],
                                  int           NrOfChannelBits,
