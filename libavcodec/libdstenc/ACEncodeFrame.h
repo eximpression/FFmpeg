@@ -59,13 +59,14 @@ Changes:
 /*============================================================================*/
 /*       INCLUDES                                                             */
 /*============================================================================*/
+#include "mangle.h"
 #include "types.h"
 
 /*============================================================================*/
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-ENCODING_STATUS DST_EACEncodeFrame( /* input */
+ENCODING_STATUS MANGLE(DST_EACEncodeFrame)( /* input */
                                     unsigned char   BitP[MAXCH][MAXCHBITS],
                                     unsigned int    BitRes[MAXCH][MAXCHBITS/32],
                                     int             NrOfChannelBits,

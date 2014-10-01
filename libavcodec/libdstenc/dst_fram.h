@@ -60,13 +60,14 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "types.h"
 
 /*============================================================================*/
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-int  DST_FramLosslessEncode(unsigned char* MuxedChannelData,
+int  MANGLE(DST_FramLosslessEncode)(unsigned char* MuxedChannelData,
                             unsigned char* DSTFrame,ebunch * E);
 
 #endif

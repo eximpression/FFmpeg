@@ -87,7 +87,7 @@ Changes:
  *
  */
 
-ENCODING_STATUS  DST_EACCountForProbCalc(/* in */
+ENCODING_STATUS  MANGLE(DST_EACCountForProbCalc)(/* in */
                                          unsigned char  BitResidual[MAXCH][MAXCHBITS],
                                          int            ChannelFilter[MAXCH],
                                          int            ChannelPtable[MAXCH],

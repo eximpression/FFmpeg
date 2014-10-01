@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
   CodOpt.MaxPredOrder         = 128;
   CodOpt.NrOfFramesInFile     = 0;
 
-  ReadEncCmdLineParams(argc, argv, &CodOpt);
+  MANGLE(ReadEncCmdLineParams)(argc, argv, &CodOpt);
   
   /* open inputfile and outputfile */
   Continue = FIO_Open(CodOpt.InFileName,
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
    ***************************************************/
   if (Continue == TRUE)
   {
-    InitEncOk = Init(CodOpt.NrOfChannels, CodOpt.Fsample44);
+    InitEncOk = MANGLE(Init)(CodOpt.NrOfChannels, CodOpt.Fsample44);
     Continue = InitEncOk;
   }
 
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
       ***************************************************/
     if (Continue == TRUE)
     {
-      EncStatus = Encode(DSDframeBuf, DSTframeBuf, &frameSize);
+      EncStatus = MANGLE(Encode)(DSDframeBuf, DSTframeBuf, &frameSize);
       if (EncStatus != DST_NOERROR)
       {
         Continue = FALSE; 
@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
    ***************************************************/
   if (InitEncOk == TRUE)
   {
-    Close();
+    MANGLE(Close)();
   }
 
   /***************************************************

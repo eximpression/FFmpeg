@@ -88,7 +88,7 @@ Changes:
  * 
  *****************************************************************************/
 
-void DemuxDSDstreamTo01(unsigned char*  DsdMuxedFrameBuffer,
+static void MANGLE(DemuxDSDstreamTo01)(unsigned char*  DsdMuxedFrameBuffer,
                         unsigned char   DsdDemuxedFrameBuffer[MAXCH][MAXCHBITS],
                         int             numberOfChannels,
                         int             framesize)
@@ -128,7 +128,7 @@ void DemuxDSDstreamTo01(unsigned char*  DsdMuxedFrameBuffer,
  * Global parameter usage :
  * 
  *****************************************************************************/
-void ConvertCharToPacked32Bit(unsigned char   CharBits[MAXCH][MAXCHBITS],
+static void MANGLE(ConvertCharToPacked32Bit)(unsigned char   CharBits[MAXCH][MAXCHBITS],
                               int             NrOfChannels,
                               int             NrOfChannelBits,
                               unsigned int    Packed32Bits[MAXCH][MAXCHBITS/32])
@@ -161,7 +161,7 @@ void ConvertCharToPacked32Bit(unsigned char   CharBits[MAXCH][MAXCHBITS],
  * Global parameter usage :
  * 
  *****************************************************************************/
-ENCODING_STATUS DST_FramLosslessEncode(unsigned char* MuxedChannelData,
+ENCODING_STATUS MANGLE(DST_FramLosslessEncode)(unsigned char* MuxedChannelData,
                                        unsigned char* DSTFrame,
                                        ebunch*        E )
 {
@@ -171,7 +171,7 @@ ENCODING_STATUS DST_FramLosslessEncode(unsigned char* MuxedChannelData,
   /* set default value; */
   E->EncodedFrameLen = 0;
   
-  DemuxDSDstreamTo01(MuxedChannelData,E->ChBitStream01,E->NrOfChannels, E->DSDFrameSize);
+  MANGLE(DemuxDSDstreamTo01)(MuxedChannelData,E->ChBitStream01,E->NrOfChannels, E->DSDFrameSize);
 
 /* ---------------------------------------------------------- */
 /* Calculation of autocorrelation vectors                     */
@@ -179,7 +179,7 @@ ENCODING_STATUS DST_FramLosslessEncode(unsigned char* MuxedChannelData,
   
   if (DST_NOERROR == ErrorStatus)
   {
-    ErrorStatus = CalcAutoVectors(/* input */
+    ErrorStatus = MANGLE(CalcAutoVectors)(/* input */
                                   E->ChBitStream01,
                                   E->ChannelFilter,
                                   E->DSDFrameSize*BYTESIZE,
@@ -196,7 +196,7 @@ ENCODING_STATUS DST_FramLosslessEncode(unsigned char* MuxedChannelData,
   
   if (DST_NOERROR == ErrorStatus)
   {
-    ErrorStatus = OEM_FirCalcFCoefs(/* input */
+    ErrorStatus = MANGLE(OEM_FirCalcFCoefs)(/* input */
                                     E->NrOfFilters,
                                     E->PredOrder,
                                     E->FloatV,
@@ -212,7 +212,7 @@ ENCODING_STATUS DST_FramLosslessEncode(unsigned char* MuxedChannelData,
 
   if (DST_NOERROR == ErrorStatus)
   {
-    ErrorStatus=OEM_FirQuantFCoefs(/* input */
+    ErrorStatus=MANGLE(OEM_FirQuantFCoefs)(/* input */
                                    E->FCoefM,
                                    E->NrOfFilters,
                                    E->OptPredOrder,
@@ -226,7 +226,7 @@ ENCODING_STATUS DST_FramLosslessEncode(unsigned char* MuxedChannelData,
 
   if (DST_NOERROR == ErrorStatus)
   {
-    ErrorStatus=DST_EFirBitPredFilter(E->ChBitStream01,
+    ErrorStatus=MANGLE(DST_EFirBitPredFilter)(E->ChBitStream01,
                                       E->ChannelFilter,
                                       E->ICoefM,
                                       E->DSDFrameSize*BYTESIZE,
@@ -235,7 +235,7 @@ ENCODING_STATUS DST_FramLosslessEncode(unsigned char* MuxedChannelData,
                                       E->ChBitResidual,
                                       E->Z    );
 
-    ConvertCharToPacked32Bit(/* input */
+    MANGLE(ConvertCharToPacked32Bit)(/* input */
                              E->ChBitResidual, 
                              E->NrOfChannels, 
                              E->DSDFrameSize*BYTESIZE, 
@@ -250,7 +250,7 @@ ENCODING_STATUS DST_FramLosslessEncode(unsigned char* MuxedChannelData,
 
   if (DST_NOERROR == ErrorStatus)
   {
-    ErrorStatus=DST_EACCountForProbCalc(E->ChBitResidual,
+    ErrorStatus=MANGLE(DST_EACCountForProbCalc)(E->ChBitResidual,
                                         E->ChannelFilter,
                                         E->ChannelPtable,
                                         E->DSDFrameSize*BYTESIZE,
@@ -268,7 +268,7 @@ ENCODING_STATUS DST_FramLosslessEncode(unsigned char* MuxedChannelData,
 
   if (DST_NOERROR == ErrorStatus)
   {
-    ErrorStatus=DST_EACGeneratePtables(E->ChannelPtable,
+    ErrorStatus=MANGLE(DST_EACGeneratePtables)(E->ChannelPtable,
                                        E->Count,
                                        E->NrOfChannels,
                                        E->NrOfPtables,
@@ -285,7 +285,7 @@ ENCODING_STATUS DST_FramLosslessEncode(unsigned char* MuxedChannelData,
   if (DST_NOERROR == ErrorStatus)
   {
    
-    ErrorStatus=DST_EACBitPLookUp(E->ChannelFilter,
+    ErrorStatus=MANGLE(DST_EACBitPLookUp)(E->ChannelFilter,
                                   E->ChannelPtable,
                                   E->DSDFrameSize*BYTESIZE,
                                   E->NrOfChannels,
@@ -311,7 +311,7 @@ ENCODING_STATUS DST_FramLosslessEncode(unsigned char* MuxedChannelData,
     }
     else
     {
-        ErrorStatus=DST_EACEncodeFrame(/* input */
+        ErrorStatus=MANGLE(DST_EACEncodeFrame)(/* input */
                                        E->BitP,
                                        E->BitResidual,
                                        E->DSDFrameSize*BYTESIZE,
@@ -330,7 +330,7 @@ ENCODING_STATUS DST_FramLosslessEncode(unsigned char* MuxedChannelData,
 
   if (DST_NOERROR == ErrorStatus)
   {
-    ErrorStatus=DST_StrfFrameToStream(E->AData,
+    ErrorStatus=MANGLE(DST_StrfFrameToStream)(E->AData,
                                       E->AritEncoded,
                                       MuxedChannelData,
                                       E->ChannelFilter,

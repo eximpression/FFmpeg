@@ -60,13 +60,14 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "types.h"
 
 /*============================================================================*/
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-ENCODING_STATUS  DST_EACBitPLookUp( int           ChannelFilter[MAXCH],
+ENCODING_STATUS  MANGLE(DST_EACBitPLookUp)( int           ChannelFilter[MAXCH],
                                     int           ChannelPtable[MAXCH],
                                     int           NrOfChannelBits,
                                     int           NrOfChannels,

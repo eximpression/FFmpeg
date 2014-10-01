@@ -81,7 +81,7 @@ Changes:
  * Global parameter usage :
  * 
  *****************************************************************************/
-void DST_UseEncoder(void)
+static void DST_UseEncoder(void)
 {
   fprintf(stdout, "Ref DST Encoder    \n");
   fprintf(stdout, "                   \n");
@@ -106,7 +106,7 @@ void DST_UseEncoder(void)
  * Global parameter usage :
  * 
  *****************************************************************************/
-void ReadEncCmdLineParams(int argc, char *argv[], CoderOptions *CO)
+void MANGLE(ReadEncCmdLineParams)(int argc, char *argv[], CoderOptions *CO)
 {
   int i;
 
@@ -166,7 +166,7 @@ void ReadEncCmdLineParams(int argc, char *argv[], CoderOptions *CO)
  * Global parameter usage :
  * 
  *****************************************************************************/
-BOOL DST_InitEncInitialisation(ebunch* E)
+BOOL MANGLE(DST_InitEncInitialisation)(ebunch* E)
 {
   BOOL retval = TRUE;
     

@@ -60,13 +60,14 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "types.h"
 
 /*============================================================================*/
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-ENCODING_STATUS  DST_EFirBitPredFilter(/* in */
+ENCODING_STATUS  MANGLE(DST_EFirBitPredFilter)(/* in */
                                        unsigned char  BitStream[MAXCH][MAXCHBITS],
                                        int            ChannelFilter[MAXCH],
                                        int            ICoef[MAXCH][MAXPREDORDER],

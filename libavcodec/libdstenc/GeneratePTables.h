@@ -60,13 +60,14 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "conststr.h"
 
 /*============================================================================*/
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-ENCODING_STATUS  DST_EACGeneratePtables(
+ENCODING_STATUS  MANGLE(DST_EACGeneratePtables)(
 /* in */
 int           ChannelPtable[MAXCH],
 int           CountRight[MAXCH][2][MAXPTABLELEN],

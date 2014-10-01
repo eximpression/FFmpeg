@@ -104,7 +104,7 @@ static void AddToStream(unsigned char *EncodedFrame,
  *                   
  */
 
-ENCODING_STATUS  DST_StrfFrameToStream(/* in */
+ENCODING_STATUS  MANGLE(DST_StrfFrameToStream)(/* in */
                                        unsigned int   AData[MAXCH*(MAXCHBITS/32)],
                                        int            AritEncoded,
                                        unsigned char* MuxedChannelData,
@@ -141,7 +141,6 @@ ENCODING_STATUS  DST_StrfFrameToStream(/* in */
   int           FDataLen;
   int           PDataLen;
   int           CalcEncFrameLen;  
-  int           LLBytes;
 
 
   if (BitTableInit == 0)
@@ -432,8 +431,6 @@ ENCODING_STATUS  DST_StrfFrameToStream(/* in */
 
   }
 
-  LLBytes = (BitNr/8) ;
-  
   return (DST_NOERROR);
 }
 

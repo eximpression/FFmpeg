@@ -83,7 +83,7 @@ static ebunch*          E;
  * Global parameter usage :
  * 
  *****************************************************************************/
-BOOL Init(int NrOfChannels, int Fsample44)
+BOOL MANGLE(Init)(int NrOfChannels, int Fsample44)
 {
     BOOL result = FALSE;
 
@@ -97,7 +97,7 @@ BOOL Init(int NrOfChannels, int Fsample44)
       E->Fsample44       = Fsample44; /* 64, 128, 256 */
       E->DSDFrameSize    = 588 * E->Fsample44 / 8;
 
-      DST_InitEncInitialisation(E);
+      MANGLE(DST_InitEncInitialisation)(E);
     }
     return result;
 }
@@ -118,12 +118,12 @@ BOOL Init(int NrOfChannels, int Fsample44)
  * Global parameter usage :
  * 
  *****************************************************************************/
-ENCODING_STATUS Encode( unsigned char* MuxedChannelData,
+ENCODING_STATUS MANGLE(Encode)( unsigned char* MuxedChannelData,
                         unsigned char* DSTFrame, int* FrameSize)
 {
     ENCODING_STATUS result;
 
-    result = DST_FramLosslessEncode(MuxedChannelData,DSTFrame,E);
+    result = MANGLE(DST_FramLosslessEncode)(MuxedChannelData,DSTFrame,E);
 
     *FrameSize = E->EncodedFrameLen;
 
@@ -142,7 +142,7 @@ ENCODING_STATUS Encode( unsigned char* MuxedChannelData,
  * Global parameter usage :
  * 
  *****************************************************************************/
-BOOL Close(void)
+BOOL MANGLE(Close)(void)
 {
     BOOL result = TRUE;
 

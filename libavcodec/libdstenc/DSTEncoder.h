@@ -60,17 +60,18 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "types.h"
 
 /*============================================================================*/
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
-BOOL Init(int NrOfChannels, int Fsample44);
-BOOL Encode(unsigned char*  MuxedChannelData, 
+BOOL MANGLE(Init)(int NrOfChannels, int Fsample44);
+BOOL MANGLE(Encode)(unsigned char*  MuxedChannelData, 
             unsigned char*  DSTFrame, 
             int*            FrameSize);
-BOOL Close(void);
+BOOL MANGLE(Close)(void);
 
 #endif
 

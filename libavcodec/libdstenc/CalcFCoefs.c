@@ -82,7 +82,7 @@ Changes:
 /*                                                                         */
 /***************************************************************************/
 
-int calc_predorder( int n, 
+static int MANGLE(calc_predorder)( int n, 
                     float a[MAXPREDORDER][MAXPREDORDER], 
                     float p[MAXPREDORDER])
 {
@@ -144,7 +144,7 @@ int calc_predorder( int n,
 /*                                                                         */
 /***************************************************************************/
 
-void calc_order(  int   n, 
+static void MANGLE(calc_order)(  int   n, 
                   float *b, 
                   float *x, 
                   float a[MAXPREDORDER][MAXPREDORDER], 
@@ -188,7 +188,7 @@ void calc_order(  int   n,
  * 
  */
 
-ENCODING_STATUS OEM_FirCalcFCoefs(/* in */
+ENCODING_STATUS MANGLE(OEM_FirCalcFCoefs)(/* in */
                                   int     NrOfFilters,
                                   int*    PredOrder,
                                   float  v[MAXCH][MAXAUTOLEN],
@@ -216,7 +216,7 @@ ENCODING_STATUS OEM_FirCalcFCoefs(/* in */
     }
 
     /***** Decompose and solve *****/
-    OptPredOrder[FilterNr] = calc_predorder(PredOrder[FilterNr],a,p);
+    OptPredOrder[FilterNr] = MANGLE(calc_predorder)(PredOrder[FilterNr],a,p);
 
     if (OptPredOrder[FilterNr] <= 0)
     {
@@ -232,7 +232,7 @@ ENCODING_STATUS OEM_FirCalcFCoefs(/* in */
     }
     else
     {
-      calc_order(OptPredOrder[FilterNr], &v[FilterNr][1], FCoef[FilterNr], a, p);
+      MANGLE(calc_order)(OptPredOrder[FilterNr], &v[FilterNr][1], FCoef[FilterNr], a, p);
     }
   }
   

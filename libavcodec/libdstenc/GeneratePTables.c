@@ -79,7 +79,7 @@ Changes:
  * 
  */
 
-ENCODING_STATUS  DST_EACGeneratePtables(/* in */
+ENCODING_STATUS  MANGLE(DST_EACGeneratePtables)(/* in */
                                         int           ChannelPtable[MAXCH],
                                         int           Count[MAXCH][2][MAXPTABLELEN],
                                         int           NrOfChannels,

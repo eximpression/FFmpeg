@@ -60,14 +60,15 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "types.h"
 
 /*============================================================================*/
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-void ReadEncCmdLineParams(int argc, char *argv[], CoderOptions *CO);
-int  DST_InitEncInitialisation(ebunch* E);
+void MANGLE(ReadEncCmdLineParams)(int argc, char *argv[], CoderOptions *CO);
+int  MANGLE(DST_InitEncInitialisation)(ebunch* E);
 
 #endif
 
