@@ -36,6 +36,7 @@
 #include "libavcodec/put_bits.h"
 #include "libavcodec/vc1_common.h"
 #include "libavcodec/raw.h"
+#include "libavcodec/mpeg4audio.h"
 #include "internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intfloat.h"
@@ -578,7 +579,7 @@ static int mov_write_esds_tag(AVIOContext *pb, MOVTrack *track) // Basic
         track->enc->sample_rate > 24000)
         avio_w8(pb, 0x6B); // 11172-3
     else
-        avio_w8(pb, ff_codec_get_tag(ff_mp4_obj_type, track->enc->codec_id));
+        avio_w8(pb, ff_codec_get_tag(ff_mp4_obj_type, track->enc->codec_id));  /// object_type 0x40
 
     // the following fields is made of 6 bits to identify the streamtype (4 for video, 5 for audio)
     // plus 1 bit to indicate upstream and 1 bit set to 1 (reserved)
@@ -5086,6 +5087,30 @@ static int mov_create_dvd_sub_decoder_specific_info(MOVTrack *track,
     return 0;
 }
 
+static int create_dst_audio_specific_config(MOVTrack *track, AVCodecContext *avctx)
+{
+    PutBitContext pb;
+
+    track->vos_len  = 6;
+    track->vos_data = av_malloc(track->vos_len);
+    if (!track->vos_data)
+        return AVERROR(ENOMEM);
+
+    init_put_bits(&pb, track->vos_data, track->vos_len*8);
+    put_bits(&pb, 5, AOT_DST);
+    put_bits(&pb, 4, 0xF);
+    put_bits(&pb, 24, avctx->sample_rate);
+    put_bits(&pb, 4, 0);
+
+    put_bits(&pb, 1, 1);  //dsddst_coded
+    put_bits(&pb, 1, avctx->channels);
+    put_bits(&pb, 1, 0);
+
+    flush_put_bits(&pb);
+    return 0;
+}
+
+
 static int mov_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
@@ -5382,6 +5407,9 @@ static int mov_write_header(AVFormatContext *s)
                 }
                 memcpy(track->vos_data, st->codec->extradata, track->vos_len);
             }
+        } else if (st->codec->codec_id == AV_CODEC_ID_DST) {
+            create_dst_audio_specific_config(track, st->codec);
+            st->codec->frame_size = 588 * (st->codec->sample_rate / 44100);
         }
 
         if (mov->encryption_scheme == MOV_ENC_CENC_AES_CTR) {
