@@ -124,6 +124,10 @@ int avpriv_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf,
 
         if (parse_config_ALS(&gb, c))
             return -1;
+    } else if (c->object_type == AOT_DST) {
+        c->dst_coded = get_bits1(&gb);
+        c->channels  = get_bits(&gb, 14);
+        skip_bits(&gb, 1);
     }
 
     if (c->ext_object_type != AOT_SBR && sync_extension) {
