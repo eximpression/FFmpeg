@@ -56,18 +56,20 @@ Changes:
 #ifndef __DST_AC_H_INCLUDED
 #define __DST_AC_H_INCLUDED
 
+
 /*============================================================================*/
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 
 /*============================================================================*/
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-void DST_ACDecodeBit(unsigned char *b, int p, unsigned char *cb, int fs, int flush);
+void MANGLE(DST_ACDecodeBit)(unsigned char *b, int p, unsigned char *cb, int fs, int flush);
 
-int DST_ACGetPtableIndex(long PredicVal, int PtableLen);
+int MANGLE(DST_ACGetPtableIndex)(long PredicVal, int PtableLen);
 
 
 #endif  /* __DST_AC_H_INCLUDED */

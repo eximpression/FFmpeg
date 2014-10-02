@@ -60,6 +60,7 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "types.h"
 
 
@@ -67,21 +68,21 @@ Changes:
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-int GetDSTDataPointer      (BYTE** pBuffer);
-int ResetReadingIndex      (void);
-int ReadNextBitFromBuffer  (BYTE*  pBit);
-int ReadNextNBitsFromBuffer(LONG*  pBits, LONG NrBits);
-int ReadNextByteFromBuffer (BYTE*  pByte);
+int MANGLE(GetDSTDataPointer)      (BYTE** pBuffer);
+int MANGLE(ResetReadingIndex)      (void);
+int MANGLE(ReadNextBitFromBuffer)  (BYTE*  pBit);
+int MANGLE(ReadNextNBitsFromBuffer)(LONG*  pBits, LONG NrBits);
+int MANGLE(ReadNextByteFromBuffer) (BYTE*  pByte);
 
-int FillBuffer(BYTE* pBuf, LONG Size);
+int MANGLE(FillBuffer)(BYTE* pBuf, LONG Size);
 
-int FIO_BitGetChrUnsigned(int Len, unsigned char *x);
-int FIO_BitGetIntUnsigned(int Len, int *x);
-int FIO_BitGetIntSigned(int Len, int *x);
-int get_in_bitcount(void);
+int MANGLE(FIO_BitGetChrUnsigned)(int Len, unsigned char *x);
+int MANGLE(FIO_BitGetIntUnsigned)(int Len, int *x);
+int MANGLE(FIO_BitGetIntSigned)(int Len, int *x);
+int MANGLE(get_in_bitcount)(void);
 
-int CreateBuffer(LONG Size);
-int DeleteBuffer(void);
+int MANGLE(CreateBuffer)(LONG Size);
+int MANGLE(DeleteBuffer)(void);
 
 
 #endif /* !defined(__DSTDATA_H_INCLUDED) */

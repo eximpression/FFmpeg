@@ -79,14 +79,14 @@ static  BYTE    m_DataByte    = 0;
  * Forward declaration function prototype
  ***********************************************************************/
 
-int getbits(long *outword, int out_bitptr);
+static int getbits(long *outword, int out_bitptr);
 
 
 /***********************************************************************
  * GetDSTDataPointer
  ***********************************************************************/
 
-int GetDSTDataPointer (BYTE** pBuffer)
+int MANGLE(GetDSTDataPointer) (BYTE** pBuffer)
 {
   int hr = 0;
 
@@ -100,7 +100,7 @@ int GetDSTDataPointer (BYTE** pBuffer)
  * ResetReadingIndex
  ***********************************************************************/
 
-int ResetReadingIndex(void)
+int MANGLE(ResetReadingIndex)(void)
 {
   int hr = 0;
 
@@ -117,7 +117,7 @@ int ResetReadingIndex(void)
  * CreateBuffer
  ***********************************************************************/
 
-int CreateBuffer(LONG Size)
+int MANGLE(CreateBuffer)(LONG Size)
 {
   int hr = 0;
 
@@ -139,7 +139,7 @@ int CreateBuffer(LONG Size)
     hr = -1;
   }
 
-  ResetReadingIndex();
+  MANGLE(ResetReadingIndex)();
 
   return (hr);
 }
@@ -149,7 +149,7 @@ int CreateBuffer(LONG Size)
  * DeleteBuffer
  ***********************************************************************/
 
-int DeleteBuffer(void)
+int MANGLE(DeleteBuffer)(void)
 {
   int hr = 0;
 
@@ -160,7 +160,7 @@ int DeleteBuffer(void)
     hr = -1;
   }
 
-  ResetReadingIndex();
+  MANGLE(ResetReadingIndex)();
 
   return (hr);
 }
@@ -170,7 +170,7 @@ int DeleteBuffer(void)
  * FillBuffer
  ***********************************************************************/
 
-int FillBuffer(BYTE* pBuf, LONG Size)
+int MANGLE(FillBuffer)(BYTE* pBuf, LONG Size)
 {
   int hr = 0;
   LONG    cnt;
@@ -183,14 +183,14 @@ int FillBuffer(BYTE* pBuf, LONG Size)
     m_mask[cnt] = 1 << cnt;
   }
 
-  CreateBuffer(Size);
+  MANGLE(CreateBuffer)(Size);
 
   for (cnt = 0; cnt < Size; cnt++)
   {
     m_pDSTdata[cnt] = pBuf[cnt];
   }
 
-  ResetReadingIndex();
+  MANGLE(ResetReadingIndex)();
 
   return (hr);
 }
@@ -212,7 +212,7 @@ int FillBuffer(BYTE* pBuf, LONG Size)
 /*                                                                         */
 /***************************************************************************/
 
-int FIO_BitGetChrUnsigned(int Len, unsigned char *x)
+int MANGLE(FIO_BitGetChrUnsigned)(int Len, unsigned char *x)
 {
   int   return_value;
   long  tmp;
@@ -253,7 +253,7 @@ int FIO_BitGetChrUnsigned(int Len, unsigned char *x)
 /*                                                                         */
 /***************************************************************************/
 
-int FIO_BitGetIntUnsigned(int Len, int *x)
+int MANGLE(FIO_BitGetIntUnsigned)(int Len, int *x)
 {
   int   return_value;
   long  tmp;
@@ -293,7 +293,7 @@ int FIO_BitGetIntUnsigned(int Len, int *x)
 /*                                                                         */
 /***************************************************************************/
 
-int FIO_BitGetIntSigned(int Len, int *x)
+int MANGLE(FIO_BitGetIntSigned)(int Len, int *x)
 {
   int   return_value;
   long  tmp;
@@ -337,7 +337,7 @@ int FIO_BitGetIntSigned(int Len, int *x)
 /*                                                                         */
 /***************************************************************************/
 
-int getbits(long *outword, int out_bitptr)
+static int getbits(long *outword, int out_bitptr)
 {
   m_BitCounter += out_bitptr;
   *outword = 0;
@@ -376,7 +376,7 @@ int getbits(long *outword, int out_bitptr)
 /*                                                                         */
 /***************************************************************************/
 
-int get_in_bitcount(void)
+int MANGLE(get_in_bitcount)(void)
 {
   return m_BitCounter;
 }

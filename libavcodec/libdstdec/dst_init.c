@@ -88,7 +88,7 @@ Changes:
 /*                                                                         */
 /***************************************************************************/
 
-void SetDefaults(CoderOptions *CO) 
+void MANGLE(SetDefaults)(CoderOptions *CO) 
 {
   CO->NrOfFramesInFile     = 0;
   CO->NrOfChannels         = 1;
@@ -106,7 +106,7 @@ void SetDefaults(CoderOptions *CO)
 /*                                                                         */
 /***************************************************************************/
 
-void DST_UseDecoder(int ExitCode) 
+static void DST_UseDecoder(int ExitCode) 
 {
   fprintf(stderr, "\nUsage:\n");
   fprintf(stderr, "Reference DstDecoder                                       \n");
@@ -130,7 +130,7 @@ void DST_UseDecoder(int ExitCode)
 /*                                                                         */
 /***************************************************************************/
 
-void ReadDecCmdLineParams(int argc, char ** argv, CoderOptions *CO)
+void MANGLE(ReadDecCmdLineParams)(int argc, char ** argv, CoderOptions *CO)
 {
   int i;
 
@@ -193,7 +193,7 @@ void ReadDecCmdLineParams(int argc, char ** argv, CoderOptions *CO)
 /*                                                                         */
 /***************************************************************************/
 
-int CheckDecParams(CoderOptions *CO) 
+int MANGLE(CheckDecParams)(CoderOptions *CO) 
 {
   /* Check for DSDIFF(DST) input file name */
   if (strcmp(CO->InFileName , "") == 0)
@@ -573,7 +573,7 @@ static void AllocateDecMemory (ebunch * D)
 /*                                                                         */
 /***************************************************************************/
 
-int DST_InitDecoder(ebunch * D) 
+int MANGLE(DST_InitDecoder)(ebunch * D) 
 {
   int  retval = 0;
   
@@ -588,11 +588,11 @@ int DST_InitDecoder(ebunch * D)
 
   if (retval==0) 
   {
-    retval = CCP_CalcInit(&D->StrFilter);
+    retval = MANGLE(CCP_CalcInit)(&D->StrFilter);
   }
   if (retval==0) 
   {
-    retval = CCP_CalcInit(&D->StrPtable);
+    retval = MANGLE(CCP_CalcInit)(&D->StrPtable);
   }
 
   return(retval);
@@ -610,7 +610,7 @@ int DST_InitDecoder(ebunch * D)
 /*                                                                         */
 /***************************************************************************/
 
-int DST_CloseDecoder(ebunch * D)
+int MANGLE(DST_CloseDecoder)(ebunch * D)
 {
   int retval = 0;
   /* Free the memory that was used for the arrays */

@@ -80,7 +80,7 @@ Changes:
 /*                                                                         */
 /***************************************************************************/
 
-int CCP_CalcInit(CodedTable *CT)
+int MANGLE(CCP_CalcInit)(CodedTable *CT)
 {
   int  retval = 0;
   int   i;

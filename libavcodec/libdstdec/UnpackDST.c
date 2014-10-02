@@ -65,31 +65,31 @@ Changes:
 /*       Forward declaration function prototypes                              */
 /*============================================================================*/
 
-void ReadDSDframe(long          MaxFrameLen, 
+static void ReadDSDframe(long          MaxFrameLen, 
                   int           NrOfChannels, 
                   unsigned char * DSDFrame);
 
-int RiceDecode(int m);
-int Log2RoundUp(long x);
+static int RiceDecode(int m);
+static int Log2RoundUp(long x);
 
-void ReadTableSegmentData(int     NrOfChannels, 
+static void ReadTableSegmentData(int     NrOfChannels, 
                           int     FrameLen,
                           int     MaxNrOfSegs, 
                           int     MinSegLen, 
                           Segment *S,
                           int     *SameSegAllCh);
-void CopySegmentData(FrameHeader *FH);
-void ReadSegmentData(FrameHeader *FH);
-void ReadTableMappingData(int     NrOfChannels, 
+static void CopySegmentData(FrameHeader *FH);
+static void ReadSegmentData(FrameHeader *FH);
+static void ReadTableMappingData(int     NrOfChannels, 
                           int     MaxNrOfTables,
                           Segment *S, 
                           int     *NrOfTables, 
                           int     *SameMapAllCh);
-void CopyMappingData(FrameHeader *FH);
-void ReadMappingData(FrameHeader *FH);
-void ReadFilterCoefSets(int NrOfChannels, FrameHeader *FH, CodedTable *CF);
-void ReadProbabilityTables(FrameHeader *FH, CodedTable *CP, int **P_one);
-void ReadArithmeticCodedData(int ADataLen, unsigned char *AData);
+static void CopyMappingData(FrameHeader *FH);
+static void ReadMappingData(FrameHeader *FH);
+static void ReadFilterCoefSets(int NrOfChannels, FrameHeader *FH, CodedTable *CF);
+static void ReadProbabilityTables(FrameHeader *FH, CodedTable *CP, int **P_one);
+static void ReadArithmeticCodedData(int ADataLen, unsigned char *AData);
 
 
 
@@ -108,7 +108,7 @@ void ReadArithmeticCodedData(int ADataLen, unsigned char *AData);
 /*                                                                         */
 /***************************************************************************/
 
-void ReadDSDframe(long          MaxFrameLen, 
+static void ReadDSDframe(long          MaxFrameLen, 
                   int           NrOfChannels, 
                   unsigned char *DSDFrame)
 {
@@ -117,7 +117,7 @@ void ReadDSDframe(long          MaxFrameLen,
   
   for (ByteNr = 0; ByteNr < max; ByteNr++) 
   {
-    FIO_BitGetChrUnsigned(8,&DSDFrame[ByteNr]);
+    MANGLE(FIO_BitGetChrUnsigned)(8,&DSDFrame[ByteNr]);
   }
 }
 
@@ -135,7 +135,7 @@ void ReadDSDframe(long          MaxFrameLen,
 /*                                                                         */
 /***************************************************************************/
 
-int RiceDecode(int m)
+static int RiceDecode(int m)
 {
   int LSBs;
   int Nr;
@@ -147,7 +147,7 @@ int RiceDecode(int m)
   RunLength = 0;
   do
   {
-    FIO_BitGetIntUnsigned(1, &RLBit);
+    MANGLE(FIO_BitGetIntUnsigned)(1, &RLBit);
     if (RLBit == 0)
     {
       RunLength++;
@@ -155,14 +155,14 @@ int RiceDecode(int m)
   } while (RLBit == 0);
   
   /* Retrieve least significant bits */
-  FIO_BitGetIntUnsigned(m, &LSBs);
+  MANGLE(FIO_BitGetIntUnsigned)(m, &LSBs);
   
   Nr = (RunLength << m) + LSBs;
 
   /* Retrieve optional sign bit */
   if (Nr != 0)
   {
-    FIO_BitGetIntUnsigned(1, &Sign);
+    MANGLE(FIO_BitGetIntUnsigned)(1, &Sign);
     if (Sign == 1)
     {
       Nr = -Nr;
@@ -187,7 +187,7 @@ int RiceDecode(int m)
 /*                                                                         */
 /***************************************************************************/
 
-int Log2RoundUp(long x)
+static int Log2RoundUp(long x)
 {
   int y = 0;
   
@@ -214,7 +214,7 @@ int Log2RoundUp(long x)
 /*                                                                         */
 /***************************************************************************/
 
-void ReadTableSegmentData(int     NrOfChannels, 
+static void ReadTableSegmentData(int     NrOfChannels, 
                           int     FrameLen,
                           int     MaxNrOfSegs, 
                           int     MinSegLen, 
@@ -231,10 +231,10 @@ void ReadTableSegmentData(int     NrOfChannels,
   
   MaxSegSize = FrameLen - MinSegLen/8;
   
-  FIO_BitGetIntUnsigned(1, SameSegAllCh);
+  MANGLE(FIO_BitGetIntUnsigned)(1, SameSegAllCh);
   if (*SameSegAllCh == 1)
   {
-    FIO_BitGetIntUnsigned(1, &EndOfChannel);
+    MANGLE(FIO_BitGetIntUnsigned)(1, &EndOfChannel);
     while (EndOfChannel == 0)
     {
       if (SegNr >= MaxNrOfSegs)
@@ -245,7 +245,7 @@ void ReadTableSegmentData(int     NrOfChannels,
       if (ResolRead == 0)
       {
         NrOfBits = Log2RoundUp(FrameLen - MinSegLen/8);
-        FIO_BitGetIntUnsigned(NrOfBits, &S->Resolution);
+        MANGLE(FIO_BitGetIntUnsigned)(NrOfBits, &S->Resolution);
         if ((S->Resolution == 0) || (S->Resolution > FrameLen - MinSegLen/8))
         {
           fprintf(stderr, "ERROR: Invalid segment resolution!\n");
@@ -254,7 +254,7 @@ void ReadTableSegmentData(int     NrOfChannels,
         ResolRead = 1;
       }
       NrOfBits = Log2RoundUp(MaxSegSize / S->Resolution);
-      FIO_BitGetIntUnsigned(NrOfBits, &S->SegmentLen[0][SegNr]);
+      MANGLE(FIO_BitGetIntUnsigned)(NrOfBits, &S->SegmentLen[0][SegNr]);
       
       if ((S->Resolution * 8 * S->SegmentLen[0][SegNr] < MinSegLen) ||
           (S->Resolution * 8 * S->SegmentLen[0][SegNr] >
@@ -266,7 +266,7 @@ void ReadTableSegmentData(int     NrOfChannels,
       DefinedBits += S->Resolution * 8 * S->SegmentLen[0][SegNr];
       MaxSegSize  -= S->Resolution * S->SegmentLen[0][SegNr];
       SegNr++;
-      FIO_BitGetIntUnsigned(1, &EndOfChannel);
+      MANGLE(FIO_BitGetIntUnsigned)(1, &EndOfChannel);
     }
     S->NrOfSegments[0]      = SegNr + 1;
     S->SegmentLen[0][SegNr] = 0;
@@ -289,13 +289,13 @@ void ReadTableSegmentData(int     NrOfChannels,
         fprintf(stderr, "ERROR: Too many segments for this channel!\n");
         exit(1);
       }
-      FIO_BitGetIntUnsigned(1, &EndOfChannel);
+      MANGLE(FIO_BitGetIntUnsigned)(1, &EndOfChannel);
       if (EndOfChannel == 0)
       {
         if (ResolRead == 0)
         {
           NrOfBits = Log2RoundUp(FrameLen - MinSegLen/8);
-          FIO_BitGetIntUnsigned(NrOfBits, &S->Resolution);
+          MANGLE(FIO_BitGetIntUnsigned)(NrOfBits, &S->Resolution);
           if ((S->Resolution == 0) || (S->Resolution > FrameLen - MinSegLen/8))
           {
             fprintf(stderr, "ERROR: Invalid segment resolution!\n");
@@ -304,7 +304,7 @@ void ReadTableSegmentData(int     NrOfChannels,
           ResolRead = 1;
         }
         NrOfBits = Log2RoundUp(MaxSegSize / S->Resolution);
-        FIO_BitGetIntUnsigned(NrOfBits, &S->SegmentLen[ChNr][SegNr]);
+        MANGLE(FIO_BitGetIntUnsigned)(NrOfBits, &S->SegmentLen[ChNr][SegNr]);
         
         if ((S->Resolution * 8 * S->SegmentLen[ChNr][SegNr] < MinSegLen) ||
             (S->Resolution * 8 * S->SegmentLen[ChNr][SegNr] >
@@ -351,7 +351,7 @@ void ReadTableSegmentData(int     NrOfChannels,
 /*                                                                         */
 /***************************************************************************/
 
-void CopySegmentData(FrameHeader *FH)
+static void CopySegmentData(FrameHeader *FH)
 {
   int ChNr;
   int SegNr;
@@ -404,9 +404,9 @@ void CopySegmentData(FrameHeader *FH)
 /*                                                                         */
 /***************************************************************************/
 
-void ReadSegmentData(FrameHeader *FH)
+static void ReadSegmentData(FrameHeader *FH)
 {
-  FIO_BitGetIntUnsigned(1, &FH->PSameSegAsF);
+  MANGLE(FIO_BitGetIntUnsigned)(1, &FH->PSameSegAsF);
   ReadTableSegmentData( FH->NrOfChannels, 
                         FH->MaxFrameLen, 
                         MAXNROF_FSEGS,
@@ -444,7 +444,7 @@ void ReadSegmentData(FrameHeader *FH)
 /*                                                                         */
 /***************************************************************************/
 
-void ReadTableMappingData(int     NrOfChannels, 
+static void ReadTableMappingData(int     NrOfChannels, 
                           int     MaxNrOfTables,
                           Segment *S, 
                           int     *NrOfTables, 
@@ -457,13 +457,13 @@ void ReadTableMappingData(int     NrOfChannels,
   
   S->Table4Segment[0][0] = 0;
 
-  FIO_BitGetIntUnsigned(1, SameMapAllCh);
+  MANGLE(FIO_BitGetIntUnsigned)(1, SameMapAllCh);
   if (*SameMapAllCh == 1)
   {
     for (SegNr = 1; SegNr < S->NrOfSegments[0]; SegNr++)
     {
       NrOfBits = Log2RoundUp(CountTables);
-      FIO_BitGetIntUnsigned(NrOfBits, &S->Table4Segment[0][SegNr]);
+      MANGLE(FIO_BitGetIntUnsigned)(NrOfBits, &S->Table4Segment[0][SegNr]);
       
       if (S->Table4Segment[0][SegNr] == CountTables)
       {
@@ -497,7 +497,7 @@ void ReadTableMappingData(int     NrOfChannels,
         if ((ChNr != 0) || (SegNr != 0))
         {
           NrOfBits = Log2RoundUp(CountTables);
-          FIO_BitGetIntUnsigned(NrOfBits, &S->Table4Segment[ChNr][SegNr]);
+          MANGLE(FIO_BitGetIntUnsigned)(NrOfBits, &S->Table4Segment[ChNr][SegNr]);
           
           if (S->Table4Segment[ChNr][SegNr] == CountTables)
           {
@@ -537,7 +537,7 @@ void ReadTableMappingData(int     NrOfChannels,
 /*                                                                         */
 /***************************************************************************/
 
-void CopyMappingData(FrameHeader *FH)
+static void CopyMappingData(FrameHeader *FH)
 {
   int ChNr;
   int SegNr;
@@ -588,11 +588,11 @@ void CopyMappingData(FrameHeader *FH)
 /*                                                                         */
 /***************************************************************************/
 
-void ReadMappingData(FrameHeader *FH)
+static void ReadMappingData(FrameHeader *FH)
 {
   int j;
   
-  FIO_BitGetIntUnsigned(1, &FH->PSameMapAsF);
+  MANGLE(FIO_BitGetIntUnsigned)(1, &FH->PSameMapAsF);
   ReadTableMappingData(FH->NrOfChannels, FH->MaxNrOfFilters, &FH->FSeg,
     &FH->NrOfFilters, &FH->FSameMapAllCh);
   if (FH->PSameMapAsF == 1)
@@ -607,7 +607,7 @@ void ReadMappingData(FrameHeader *FH)
   
   for (j = 0; j < FH->NrOfChannels; j++)
   {
-    FIO_BitGetIntUnsigned(1, &FH->HalfProb[j]);
+    MANGLE(FIO_BitGetIntUnsigned)(1, &FH->HalfProb[j]);
   }
 }
 
@@ -633,7 +633,7 @@ void ReadMappingData(FrameHeader *FH)
 /*                                                                         */
 /***************************************************************************/
 
-void ReadFilterCoefSets(int          NrOfChannels,
+static void ReadFilterCoefSets(int          NrOfChannels,
                         FrameHeader *FH,
                         CodedTable  *CF)
 {
@@ -647,21 +647,21 @@ void ReadFilterCoefSets(int          NrOfChannels,
   /* Read the filter parameters */
   for(FilterNr = 0; FilterNr < FH->NrOfFilters; FilterNr++)
   {
-    FIO_BitGetIntUnsigned(SIZE_CODEDPREDORDER, &FH->PredOrder[FilterNr]);
+    MANGLE(FIO_BitGetIntUnsigned)(SIZE_CODEDPREDORDER, &FH->PredOrder[FilterNr]);
     FH->PredOrder[FilterNr]++;
     
-    FIO_BitGetIntUnsigned(1, &CF->Coded[FilterNr]);
+    MANGLE(FIO_BitGetIntUnsigned)(1, &CF->Coded[FilterNr]);
     if (CF->Coded[FilterNr] == 0)
     {
       CF->BestMethod[FilterNr] = -1;
       for(CoefNr = 0; CoefNr < FH->PredOrder[FilterNr]; CoefNr++)
       {
-        FIO_BitGetIntSigned(SIZE_PREDCOEF, &FH->ICoefA[FilterNr][CoefNr]);
+        MANGLE(FIO_BitGetIntSigned)(SIZE_PREDCOEF, &FH->ICoefA[FilterNr][CoefNr]);
       }
     }
     else
     {
-      FIO_BitGetIntUnsigned(SIZE_RICEMETHOD, &CF->BestMethod[FilterNr]);
+      MANGLE(FIO_BitGetIntUnsigned)(SIZE_RICEMETHOD, &CF->BestMethod[FilterNr]);
       if (CF->CPredOrder[CF->BestMethod[FilterNr]] >= FH->PredOrder[FilterNr])
       {
         printf("ERROR: Invalid coefficient coding method!\n");
@@ -671,10 +671,10 @@ void ReadFilterCoefSets(int          NrOfChannels,
       for(CoefNr = 0; CoefNr < CF->CPredOrder[CF->BestMethod[FilterNr]];
           CoefNr++)
       {
-        FIO_BitGetIntSigned(SIZE_PREDCOEF, &FH->ICoefA[FilterNr][CoefNr]);
+        MANGLE(FIO_BitGetIntSigned)(SIZE_PREDCOEF, &FH->ICoefA[FilterNr][CoefNr]);
       }
       
-      FIO_BitGetIntUnsigned(SIZE_RICEM,
+      MANGLE(FIO_BitGetIntUnsigned)(SIZE_RICEM,
                             &CF->m[FilterNr][CF->BestMethod[FilterNr]]);
       
       for(CoefNr = CF->CPredOrder[CF->BestMethod[FilterNr]];
@@ -734,7 +734,7 @@ void ReadFilterCoefSets(int          NrOfChannels,
 /*                                                                         */
 /***************************************************************************/
 
-void ReadProbabilityTables(FrameHeader  *FH,
+static void ReadProbabilityTables(FrameHeader  *FH,
                            CodedTable   *CP,
                            int          **P_one)
 {
@@ -747,25 +747,25 @@ void ReadProbabilityTables(FrameHeader  *FH,
   /* Read the data of all probability tables (table entries) */
   for(PtableNr = 0; PtableNr < FH->NrOfPtables; PtableNr++)
   {
-    FIO_BitGetIntUnsigned(AC_HISBITS, &FH->PtableLen[PtableNr]);
+    MANGLE(FIO_BitGetIntUnsigned)(AC_HISBITS, &FH->PtableLen[PtableNr]);
     FH->PtableLen[PtableNr]++;
     
     if (FH->PtableLen[PtableNr] > 1)
     {
-      FIO_BitGetIntUnsigned(1, &CP->Coded[PtableNr]);
+      MANGLE(FIO_BitGetIntUnsigned)(1, &CP->Coded[PtableNr]);
       
       if (CP->Coded[PtableNr] == 0)
       {
         CP->BestMethod[PtableNr] = -1;
         for(EntryNr = 0; EntryNr < FH->PtableLen[PtableNr]; EntryNr++)
         {
-          FIO_BitGetIntUnsigned(AC_BITS - 1, &P_one[PtableNr][EntryNr]);
+          MANGLE(FIO_BitGetIntUnsigned)(AC_BITS - 1, &P_one[PtableNr][EntryNr]);
           P_one[PtableNr][EntryNr]++;
         }
       }
       else
       {
-        FIO_BitGetIntUnsigned(SIZE_RICEMETHOD, &CP->BestMethod[PtableNr]);
+        MANGLE(FIO_BitGetIntUnsigned)(SIZE_RICEMETHOD, &CP->BestMethod[PtableNr]);
         if (CP->CPredOrder[CP->BestMethod[PtableNr]] >= FH->PtableLen[PtableNr])
         {
           fprintf(stderr,"ERROR: Invalid Ptable coding method!\n");
@@ -775,11 +775,11 @@ void ReadProbabilityTables(FrameHeader  *FH,
         for(EntryNr = 0; EntryNr < CP->CPredOrder[CP->BestMethod[PtableNr]];
             EntryNr++)
         {
-          FIO_BitGetIntUnsigned(AC_BITS - 1, &P_one[PtableNr][EntryNr]);
+          MANGLE(FIO_BitGetIntUnsigned)(AC_BITS - 1, &P_one[PtableNr][EntryNr]);
           P_one[PtableNr][EntryNr]++;
         }
         
-        FIO_BitGetIntUnsigned(SIZE_RICEM,
+        MANGLE(FIO_BitGetIntUnsigned)(SIZE_RICEM,
                               &CP->m[PtableNr][CP->BestMethod[PtableNr]]);
         
         for(EntryNr = CP->CPredOrder[CP->BestMethod[PtableNr]];
@@ -838,14 +838,14 @@ void ReadProbabilityTables(FrameHeader  *FH,
 /*                                                                         */
 /***************************************************************************/
 
-void ReadArithmeticCodedData(int            ADataLen, 
+static void ReadArithmeticCodedData(int            ADataLen, 
                              unsigned char  *AData)
 {
   int j;
 
   for(j = 0; j < ADataLen; j++)
   {
-    FIO_BitGetChrUnsigned(1, &AData[j]);
+    MANGLE(FIO_BitGetChrUnsigned)(1, &AData[j]);
   }
 }
 
@@ -864,7 +864,7 @@ void ReadArithmeticCodedData(int            ADataLen,
 /*                                                                         */
 /***************************************************************************/
 
-int UnpackDSTframe(ebunch*    D, 
+int MANGLE(UnpackDSTframe)(ebunch*    D, 
                    BYTE*      DSTdataframe, 
                    BYTE*      DSDdataframe)
 {
@@ -872,15 +872,15 @@ int UnpackDSTframe(ebunch*    D,
   int   Ready = 0;
   
   /* fill internal buffer with DSTframe */
-  FillBuffer(DSTdataframe, D->FrameHdr.CalcNrOfBytes);
+  MANGLE(FillBuffer)(DSTdataframe, D->FrameHdr.CalcNrOfBytes);
   
   /* interpret DST header byte */
-  FIO_BitGetIntUnsigned(1, &D->FrameHdr.DSTCoded);
+  MANGLE(FIO_BitGetIntUnsigned)(1, &D->FrameHdr.DSTCoded);
 
   if (D->FrameHdr.DSTCoded == 0)
   {
-    FIO_BitGetChrUnsigned(1, &D->DstXbits.Bit);
-    FIO_BitGetIntUnsigned(6, &Dummy);
+    MANGLE(FIO_BitGetChrUnsigned)(1, &D->DstXbits.Bit);
+    MANGLE(FIO_BitGetIntUnsigned)(6, &Dummy);
     if (Dummy != 0)
     {
       fprintf(stderr, "ERROR: Illegal stuffing pattern in frame %d!\n", D->FrameHdr.FrameNr);
@@ -902,7 +902,7 @@ int UnpackDSTframe(ebunch*    D,
     
     ReadProbabilityTables(&D->FrameHdr, &D->StrPtable, D->P_one);
     
-    D->ADataLen = D->FrameHdr.CalcNrOfBits - get_in_bitcount();
+    D->ADataLen = D->FrameHdr.CalcNrOfBits - MANGLE(get_in_bitcount)();
     ReadArithmeticCodedData(D->ADataLen, D->AData);
 
     if ((D->ADataLen > 0) && (D->AData[0] != 0))

@@ -75,7 +75,7 @@ int FIO_DSTOpenRead(char*         InFileName,
 int FIO_DSTReadFrame(BYTE*  DSTFrameData,
                      ULONG* DSTframeSize);
 
-int FIO_DSTCloseRead();
+int FIO_DSTCloseRead(void);
 
 
 #endif  /* __FIO_DST_H_INCLUDED */

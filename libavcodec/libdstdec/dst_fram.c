@@ -161,7 +161,7 @@ static int Reverse7LSBs(int c)
 /*                                                                         */
 /***************************************************************************/
 
-int DST_FramDSTDecode(unsigned char*    DSTdata, 
+int MANGLE(DST_FramDSTDecode)(unsigned char*    DSTdata, 
                       unsigned char*    MuxedDSDdata,
                       int               FrameSizeInBytes,
                       int               FrameCnt,
@@ -184,7 +184,7 @@ int DST_FramDSTDecode(unsigned char*    DSTdata,
   D->FrameHdr.CalcNrOfBits  = D->FrameHdr.CalcNrOfBytes * 8;
 
   /* unpack DST frame: segmentation, mapping, arithmatic data */
-  UnpackDSTframe(D, DSTdata, MuxedDSDdata);
+  MANGLE(UnpackDSTframe)(D, DSTdata, MuxedDSDdata);
 
   if (D->FrameHdr.DSTCoded == 0)
   {
@@ -201,7 +201,7 @@ int DST_FramDSTDecode(unsigned char*    DSTdata,
   
     D->DstXbits.PBit = Reverse7LSBs(D->FrameHdr.ICoefA[0][0]);
   
-    DST_ACDecodeBit(&D->DstXbits.Bit, D->DstXbits.PBit, D->AData,  D->ADataLen, 0);
+    MANGLE(DST_ACDecodeBit)(&D->DstXbits.Bit, D->DstXbits.PBit, D->AData,  D->ADataLen, 0);
   
     /* Initialise the Pnt and Status pointers for each channel */
     for (ChNr = 0; ChNr < D->FrameHdr.NrOfChannels; ChNr++)
@@ -245,15 +245,15 @@ int DST_FramDSTDecode(unsigned char*    DSTdata,
         if ((D->FrameHdr.HalfProb[ChNr] == 1) &&
             (BitNr < D->FrameHdr.NrOfHalfBits[ChNr]))
         {
-          DST_ACDecodeBit(&(D->BitResidual[ChNr][BitNr]),
+          MANGLE(DST_ACDecodeBit)(&(D->BitResidual[ChNr][BitNr]),
                           AC_PROBS / 2, D->AData,  D->ADataLen, 0);
         }
         else
         {
-          PtableIndex = DST_ACGetPtableIndex(D->PredicVal[ChNr][BitNr],
+          PtableIndex = MANGLE(DST_ACGetPtableIndex)(D->PredicVal[ChNr][BitNr],
              D->FrameHdr.PtableLen[D->FrameHdr.Ptable4Bit[ChNr][BitNr]]);
 
-          DST_ACDecodeBit(&(D->BitResidual[ChNr][BitNr]),
+          MANGLE(DST_ACDecodeBit)(&(D->BitResidual[ChNr][BitNr]),
              D->P_one[D->FrameHdr.Ptable4Bit[ChNr][BitNr]][PtableIndex],
              D->AData, D->ADataLen, 0);
         }
@@ -289,7 +289,7 @@ int DST_FramDSTDecode(unsigned char*    DSTdata,
       }
     }
     /* Flush the arithmetic decoder */
-    DST_ACDecodeBit(&ACError, 0, D->AData, D->ADataLen, 1);
+    MANGLE(DST_ACDecodeBit)(&ACError, 0, D->AData, D->ADataLen, 1);
 
     if (ACError != 0)
     {

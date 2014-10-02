@@ -60,13 +60,14 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "types.h"
 
 /*============================================================================*/
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-int DST_FramDSTDecode(unsigned char*    DSTdata, 
+int MANGLE(DST_FramDSTDecode)(unsigned char*    DSTdata, 
                       unsigned char*    MuxedDSDdata,
                       int               FrameSizeInBytes,
                       int               FrameCnt,

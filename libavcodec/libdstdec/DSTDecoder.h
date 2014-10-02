@@ -60,6 +60,7 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "types.h"
 #include "UnpackDST.h"
 
@@ -68,12 +69,12 @@ Changes:
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-BOOL Init(int NrChannels, int Fs44);
-BOOL Decode(  BYTE*   DSTFrame, 
+BOOL MANGLE(Init)(int NrChannels, int Fs44);
+BOOL MANGLE(Decode)(  BYTE*   DSTFrame, 
               BYTE*   DSDMuxedChannelData, 
               int     FrameCnt,
               ULONG*  FrameSize );
-BOOL Close( void );
+BOOL MANGLE(Close)( void );
 
 
 

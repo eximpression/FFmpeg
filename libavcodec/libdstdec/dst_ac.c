@@ -104,7 +104,7 @@ Changes:
 /*                                                                         */
 /***************************************************************************/
 
-void DST_ACDecodeBit(unsigned char *b, int p, unsigned char *cb,
+void MANGLE(DST_ACDecodeBit)(unsigned char *b, int p, unsigned char *cb,
                      int fs, int Flush)
 {
   static unsigned int  Init = 1;
@@ -203,7 +203,7 @@ void DST_ACDecodeBit(unsigned char *b, int p, unsigned char *cb,
 /*                                                                         */
 /***************************************************************************/
 
-int DST_ACGetPtableIndex(long PredicVal, int PtableLen)
+int MANGLE(DST_ACGetPtableIndex)(long PredicVal, int PtableLen)
 {
   int  j;
   
