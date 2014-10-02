@@ -423,13 +423,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 }
 
     if (s->verify) {
-        uint32_t * expected = (uint32_t *)av_packet_get_side_data(avpkt, AV_PKT_DATA_DST_CHECKSUM, NULL);
-        if (expected) {
-            uint32_t calculated = calc_checksum(frame->data[0], samples_per_frame * avctx->channels / 8);
-            if (calculated != *expected)
-                av_log(avctx, AV_LOG_WARNING, "checksum mismatch [calculated:%"PRIx32", expected:%"PRIx32"]\n", calculated, *expected);
-        } else
-            av_log(avctx, AV_LOG_WARNING, "no checksum\n");
+        uint8_t * checksum = av_packet_get_side_data(avpkt, AV_PKT_DATA_DST_CHECKSUM, NULL);
+        if (checksum && calc_checksum(frame->data[0], samples_per_frame * avctx->channels / 8) != AV_RL32(checksum))
+            av_log(avctx, AV_LOG_WARNING, "checksum mismatch\n");
     }
 
     *got_frame_ptr = 1;
