@@ -25,16 +25,15 @@
  * ISO/IEC 14496-3 Part 3 Subpart 10: Technical description of lossless coding of oversampled audio
  */
 
-#include "libavcodec/internal.h"
-#include "get_bits.h"
 #include "avcodec.h"
 #include "dst.h"
+#include "internal.h"
+#include "get_bits.h"
 #include "golomb.h"
 #include "mathops.h"
 #include "thread.h"
-
-#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 
 #define DST_MAX_CHANNELS 6
 #define DST_MAX_ELEMENTS (2 * DST_MAX_CHANNELS)
@@ -50,6 +49,11 @@ static const int8_t probs_code_pred_coeff[3][3] = {
     { -16, 8 },
     { -24, 24, -8 },
 };
+
+typedef struct {
+    AVCodecContext *avctx;
+    int verify;
+} DSTContext;
 
 typedef struct {
     unsigned int elements;
@@ -244,9 +248,36 @@ static void build_filter(int16_t table[DST_MAX_ELEMENTS][16][256], const Table *
     shift128left1(status.u64[ch], v); \
 }
 
+static unsigned int calc_checksum(const uint8_t * data, unsigned int length)
+{
+    unsigned int Poly = 0x40000008;
+    const unsigned long Long_msb = 0x80000000;
+    const unsigned long Short_msb = 0x80;
+    int MessageByte;
+    int i,j;
+    long unsigned Rem;
+
+    Rem = 0L;
+    for (i=0; i < length; i++) {
+        MessageByte = data[i];
+        for (j = 0; j < 8; j++) {
+            if ( (((MessageByte & Short_msb) == Short_msb)) != (((Rem & Long_msb) == Long_msb))) {
+                Rem ^= Poly;           // XOR and shift with value 1
+                Rem = (Rem << 1) + 1;
+            } else {
+                Rem = (Rem << 1);      // no XOR, shift with value 0
+            }
+            MessageByte <<= 1;
+        }
+    }
+
+    return (Rem);
+}
+
 static int decode_frame(AVCodecContext *avctx, void *data,
                         int *got_frame_ptr, AVPacket *avpkt)
 {
+    DSTContext *s = avctx->priv_data;
     AVFrame *frame = data;
     unsigned int samples_per_frame = DST_SAMPLES_PER_FRAME(avctx->sample_rate);
     ThreadFrame tframe = { .f = frame };
@@ -391,18 +422,45 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     }
 }
 
+    if (s->verify) {
+        uint32_t * expected = (uint32_t *)av_packet_get_side_data(avpkt, AV_PKT_DATA_DST_CHECKSUM, NULL);
+        if (expected) {
+            uint32_t calculated = calc_checksum(frame->data[0], samples_per_frame * avctx->channels / 8);
+            if (calculated != *expected)
+                av_log(avctx, AV_LOG_WARNING, "checksum mismatch [calculated:%"PRIx32", expected:%"PRIx32"]\n", calculated, *expected);
+        } else
+            av_log(avctx, AV_LOG_WARNING, "no checksum\n");
+    }
+
     *got_frame_ptr = 1;
     return avpkt->size;
 }
 
+#define DEC AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
+#define OFFSET(obj) offsetof(DSTContext, obj)
+static const AVOption options[] = {
+    { "verify", "Verify checksum", OFFSET(verify), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC},
+    { NULL },
+};
+
+static const AVClass dst_decoder_class = {
+    .class_name     = "DST decoder",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+    .category       = AV_CLASS_CATEGORY_DECODER,
+};
+
 AVCodec ff_dst_decoder = {
-    .name         = "dst",
-    .long_name    = NULL_IF_CONFIG_SMALL("Digital Stream Transfer (DST)"),
-    .type         = AVMEDIA_TYPE_AUDIO,
-    .id           = AV_CODEC_ID_DST,
-    .init         = decode_init,
-    .decode       = decode_frame,
-    .capabilities = CODEC_CAP_FRAME_THREADS,
-    .sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_DSD,
-                                                   AV_SAMPLE_FMT_NONE },
+    .name           = "dst",
+    .long_name      = NULL_IF_CONFIG_SMALL("Digital Stream Transfer (DST)"),
+    .priv_data_size = sizeof(DSTContext),
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = AV_CODEC_ID_DST,
+    .init           = decode_init,
+    .decode         = decode_frame,
+    .capabilities   = CODEC_CAP_FRAME_THREADS,
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_DSD,
+                                                     AV_SAMPLE_FMT_NONE },
+    .priv_class     = &dst_decoder_class,
 };
