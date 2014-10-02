@@ -12,6 +12,9 @@ libswresample: 2015-08-28
 libswscale:    2015-08-28
 libavutil:     2015-08-28
 
+2014-xx-xx - xxxxxxxx - lavc
+  Add AV_PKT_DATA_DST_CHECKSUM.
+
 2014-xx-xx - xxxxxxxx - lsws x.x.x
   Add swr_get_dsd2pcm_sr_factor() function.
 
