@@ -264,7 +264,7 @@ static void *AllocateArray (int Dim, int ElementSize, ...)
     n *= Size[i];
     for (j = 0; j < n; j++) 
     {
-      A[i][j] = &A[i+1][j * Size[i+1]];
+      A[i][j] = &((char *)A[i+1])[j * Size[i+1] * ElementSize];
     }
   }  
   AA = A[0];  
