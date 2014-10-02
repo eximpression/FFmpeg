@@ -1419,7 +1419,13 @@ enum AVPacketSideDataType {
      * should be associated with a video stream and containts data in the form
      * of the AVMasteringDisplayMetadata struct.
      */
-    AV_PKT_DATA_MASTERING_DISPLAY_METADATA
+    AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
+ 
+    /**
+     * ISO/IEC 14496-3 Direct Stream Transfer (DST) checksum
+     * u32le checksum
+     */
+    AV_PKT_DATA_DST_CHECKSUM
 };
 
 #define AV_PKT_DATA_QUALITY_FACTOR AV_PKT_DATA_QUALITY_STATS //DEPRECATED
