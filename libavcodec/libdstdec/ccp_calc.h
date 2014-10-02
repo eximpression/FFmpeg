@@ -61,9 +61,10 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "types.h"
 
-int CCP_CalcInit(CodedTable *CT);
+int MANGLE(CCP_CalcInit)(CodedTable *CT);
 
 
 #endif  /* __CCP_CALC_H_INCLUDED */

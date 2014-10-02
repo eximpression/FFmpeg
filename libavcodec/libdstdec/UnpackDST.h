@@ -61,6 +61,7 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "types.h"
 #include "DSTData.h"
 
@@ -69,7 +70,7 @@ Changes:
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-int UnpackDSTframe(ebunch*    D, 
+int MANGLE(UnpackDSTframe)(ebunch*    D, 
                    BYTE*      DSTdataframe, 
                    BYTE*      DSDdataframe);
 

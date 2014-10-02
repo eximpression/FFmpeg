@@ -87,7 +87,7 @@ static ebunch           D;
  * Global parameter usage :
  * 
  *****************************************************************************/
-BOOL Init(int NrChannels, int Fs44)
+BOOL MANGLE(Init)(int NrChannels, int Fs44)
 {
   BOOL  result = TRUE;
 
@@ -112,7 +112,7 @@ BOOL Init(int NrChannels, int Fs44)
   D.FrameHdr.MaxNrOfFilters  = 2 * D.FrameHdr.NrOfChannels;
   D.FrameHdr.MaxNrOfPtables  = 2 * D.FrameHdr.NrOfChannels;
 
-  DST_InitDecoder(&D);
+  MANGLE(DST_InitDecoder)(&D);
 
   return result;
 }
@@ -130,11 +130,11 @@ BOOL Init(int NrChannels, int Fs44)
  * Global parameter usage :
  * 
  *****************************************************************************/
-BOOL Close( void )
+BOOL MANGLE(Close)( void )
 {
   BOOL  result = TRUE;
 
-  DST_CloseDecoder(&D);
+  MANGLE(DST_CloseDecoder)(&D);
 
   return (result);
 }
@@ -152,14 +152,14 @@ BOOL Close( void )
  * Global parameter usage :
  * 
  *****************************************************************************/
-BOOL Decode(  BYTE*   DSTFrame, 
+BOOL MANGLE(Decode)(  BYTE*   DSTFrame, 
               BYTE*   DSDMuxedChannelData, 
               int     FrameCnt,
               ULONG*  FrameSize )
 {
   BOOL  result = TRUE;
 
-  DST_FramDSTDecode(DSTFrame,
+  MANGLE(DST_FramDSTDecode)(DSTFrame,
                     DSDMuxedChannelData,
                     *FrameSize,
                     FrameCnt,   

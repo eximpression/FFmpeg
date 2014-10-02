@@ -82,9 +82,9 @@ int main(int argc, char **argv)
   
   CoderOptions    CodOpt;
 
-  SetDefaults(&CodOpt);                       /* Set default decoder options   */
-  ReadDecCmdLineParams(argc, argv, &CodOpt);  /* read command line parameters  */
-  CheckDecParams(&CodOpt);                    /* check command line parameters */
+  MANGLE(SetDefaults)(&CodOpt);                       /* Set default decoder options   */
+  MANGLE(ReadDecCmdLineParams)(argc, argv, &CodOpt);  /* read command line parameters  */
+  MANGLE(CheckDecParams)(&CodOpt);                    /* check command line parameters */
 
   /*==================================================
    * Open files
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
    *==================================================*/
   if (Continue==TRUE) 
   {
-    Continue = Init(CodOpt.NrOfChannels, CodOpt.Fsample44);
+    Continue = MANGLE(Init)(CodOpt.NrOfChannels, CodOpt.Fsample44);
   }
 
   /*==================================================
@@ -133,7 +133,7 @@ int main(int argc, char **argv)
     /*==================================================
      * Decode DST Frame to DSD frame
      *==================================================*/
-    if (Decode( pDSTdataBuf, 
+    if (MANGLE(Decode)( pDSTdataBuf, 
                 pDSDdataBuf, 
                 FrameNr,
                 &frameSize ) == TRUE)
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
   /*==================================================
    * Close Decoder
    *==================================================*/
-  Close();
+  MANGLE(Close)();
 
   /*==================================================
    * Close Files

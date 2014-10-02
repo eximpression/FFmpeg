@@ -60,6 +60,7 @@ Changes:
 /*       INCLUDES                                                             */
 /*============================================================================*/
 
+#include "mangle.h"
 #include "types.h"
 
 
@@ -67,12 +68,12 @@ Changes:
 /*       FUNCTION PROTOTYPES                                                  */
 /*============================================================================*/
 
-void SetDefaults(CoderOptions *CO);
-void ReadDecCmdLineParams(int argc, char ** argv, CoderOptions *CO);
+void MANGLE(SetDefaults)(CoderOptions *CO);
+void MANGLE(ReadDecCmdLineParams)(int argc, char ** argv, CoderOptions *CO);
 
-int  CheckDecParams(CoderOptions *CO);
-int  DST_InitDecoder(ebunch * D);
-int  DST_CloseDecoder(ebunch * D);
+int  MANGLE(CheckDecParams)(CoderOptions *CO);
+int  MANGLE(DST_InitDecoder)(ebunch * D);
+int  MANGLE(DST_CloseDecoder)(ebunch * D);
 
 #endif  /* __DST_INIT_H_INCLUDED */
 

@@ -9,8 +9,8 @@
 
 CC  =  gcc
 CXX  =  g++
-CFLAGS  =  -pipe -ansi -Wall -W -g
-CXXFLAGS=  -pipe -ansi -Wall -W -g
+CFLAGS  =  -O3 -pipe -ansi -Wall -W -g
+CXXFLAGS=  -O3 -pipe -ansi -Wall -W -g
 INCPATH  =  
 LINK  =  g++
 LFLAGS  =  
@@ -63,7 +63,7 @@ UICIMPLS =
 SRCMOC  =  
 OBJMOC  =  
 DIST  =  
-TARGET  =  ./../export/RefDstDecoder
+TARGET  =  RefDstDecoder
 INTERFACE_DECL_PATH = .
 
 ####### Implicit rules

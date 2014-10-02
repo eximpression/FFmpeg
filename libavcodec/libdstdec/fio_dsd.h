@@ -70,6 +70,6 @@ Changes:
 
 int  FIO_DSDOpenWrite(char* InFileName, int NrOfChannels, int Fsample44);
 void FIO_DSDWriteFrame(unsigned char *DF);
-int  FIO_DSDCloseWrite();
+int  FIO_DSDCloseWrite(void);
 
 #endif  /* __FIO_DSD_H_INCLUDED */
