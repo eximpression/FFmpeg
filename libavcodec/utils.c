@@ -53,6 +53,7 @@
 #include "raw.h"
 #include "bytestream.h"
 #include "version.h"
+#include "dst.h"
 #include <stdlib.h>
 #include <stdarg.h>
 #include <limits.h>
@@ -2940,6 +2941,9 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         if (enc->sample_rate) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      "%d Hz, ", enc->sample_rate);
+            if (enc->sample_fmt == AV_SAMPLE_FMT_DSD)
+                snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                         " (%dxFS44)", DSD_FS44(enc->sample_rate));
         }
         av_get_channel_layout_string(buf + strlen(buf), buf_size - strlen(buf), enc->channels, enc->channel_layout);
         if (enc->sample_fmt != AV_SAMPLE_FMT_NONE) {
