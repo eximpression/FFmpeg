@@ -190,6 +190,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
     int ret;
 
     delay = swr_get_delay(aresample->swr, outlink->sample_rate);
+av_log(0,0,"delay:%i/%i\n", (int) delay, (int)outlink->sample_rate);
     if (delay > 0)
         n_out += FFMIN(delay, FFMAX(4096, n_out));
 
