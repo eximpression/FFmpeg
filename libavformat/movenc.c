@@ -5102,7 +5102,7 @@ static int create_dst_audio_specific_config(MOVTrack *track, AVCodecContext *avc
     put_bits(&pb, 24, avctx->sample_rate);
     put_bits(&pb, 4, 0);
 
-    put_bits(&pb, 1, 1);  //dsddst_coded
+    put_bits(&pb, 1, avctx->codec_id == AV_CODEC_ID_DST);
     put_bits(&pb, 1, avctx->channels);
     put_bits(&pb, 1, 0);
 
@@ -5407,9 +5407,10 @@ static int mov_write_header(AVFormatContext *s)
                 }
                 memcpy(track->vos_data, st->codec->extradata, track->vos_len);
             }
-        } else if (st->codec->codec_id == AV_CODEC_ID_DST) {
+        } else if (st->codec->codec_id == AV_CODEC_ID_DSD_MSBF || st->codec->codec_id == AV_CODEC_ID_DST) {
             create_dst_audio_specific_config(track, st->codec);
-            st->codec->frame_size = 588 * (st->codec->sample_rate / 44100);
+            if (st->codec->codec_id == AV_CODEC_ID_DST)
+                st->codec->frame_size = 588 * (st->codec->sample_rate / 44100);
         }
 
         if (mov->encryption_scheme == MOV_ENC_CENC_AES_CTR) {
