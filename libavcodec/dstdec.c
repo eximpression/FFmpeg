@@ -51,15 +51,16 @@ static const int8_t probs_code_pred_coeff[3][3] = {
 };
 
 typedef struct {
-    AVCodecContext *avctx;
-    int verify;
-} DSTContext;
-
-typedef struct {
     unsigned int elements;
     unsigned int length[DST_MAX_ELEMENTS];
     int coeff[DST_MAX_ELEMENTS][128];
 } Table;
+
+typedef struct {
+    AVCodecContext *avctx;
+    Table fsets;
+    int verify;
+} DSTContext;
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
@@ -236,7 +237,7 @@ static void build_filter(int16_t table[DST_MAX_ELEMENTS][16][256], const Table *
                       F(ch,  4) + F(ch,  5) + F(ch,  6) + F(ch,  7) + \
                       F(ch,  8) + F(ch,  9) + F(ch, 10) + F(ch, 11) + \
                       F(ch, 12) + F(ch, 13) + F(ch, 14) + F(ch, 15); \
-    if (!half_prob[ch] || i >= fsets.length[felem]) { \
+    if (!half_prob[ch] || i >= s->fsets.length[felem]) { \
         unsigned int pelem = map_ch_to_pelem[ch]; \
         unsigned int index = FFABS(predict) >> 3; \
         prob = probs.coeff[pelem][FFMIN(index, probs.length[pelem] - 1)]; \
@@ -286,7 +287,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     GetBitContext gb;
     Arith ac;
 //FIXME: struct
-    Table fsets, probs;
+    Table probs;
     unsigned int half_prob[DST_MAX_CHANNELS];
     unsigned int map_ch_to_felem[DST_MAX_CHANNELS];
     unsigned int map_ch_to_pelem[DST_MAX_CHANNELS];
@@ -337,11 +338,11 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     same = get_bits1(&gb);
 
-    if ((ret = read_map(&gb, &fsets, map_ch_to_felem, avctx->channels)) < 0)
+    if ((ret = read_map(&gb, &s->fsets, map_ch_to_felem, avctx->channels)) < 0)
         return ret;
 
     if (same) {
-        probs.elements = fsets.elements;
+        probs.elements = s->fsets.elements;
         memcpy(map_ch_to_pelem, map_ch_to_felem, sizeof(map_ch_to_pelem));
     } else
         if ((ret = read_map(&gb, &probs, map_ch_to_pelem, avctx->channels)) < 0)
@@ -354,7 +355,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     /* Filter Coef Sets (10.12) */
 
-    read_table(&gb, &fsets, fsets_code_pred_coeff, 7, 9, 1, 0);
+    read_table(&gb, &s->fsets, fsets_code_pred_coeff, 7, 9, 1, 0);
 
     /* Probability Tables (10.13) */
 
@@ -365,7 +366,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     skip_bits1(&gb);
     ac_init(&ac, &gb);
 
-    build_filter(filter, &fsets);
+    build_filter(filter, &s->fsets);
     memset(status.u8, 0xAA, sizeof(status.u8));
 
     {
@@ -373,7 +374,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         unsigned int dst_x_bit;
         OPEN_READER(re, &gb);
         UPDATE_CACHE(re, &gb);
-        AC_GET(&ac, re, &gb, prob_dst_x_bit(fsets.coeff[0][0]), 0, dst_x_bit);
+        AC_GET(&ac, re, &gb, prob_dst_x_bit(s->fsets.coeff[0][0]), 0, dst_x_bit);
 
     if (avctx->channels == 2) {
         for (i = 0; i < samples_per_frame; i += 8) {
