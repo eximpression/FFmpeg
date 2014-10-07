@@ -58,7 +58,7 @@ typedef struct {
 
 typedef struct {
     AVCodecContext *avctx;
-    Table fsets;
+    Table fsets, probs;
     int verify;
 } DSTContext;
 
@@ -240,7 +240,7 @@ static void build_filter(int16_t table[DST_MAX_ELEMENTS][16][256], const Table *
     if (!half_prob[ch] || i >= s->fsets.length[felem]) { \
         unsigned int pelem = map_ch_to_pelem[ch]; \
         unsigned int index = FFABS(predict) >> 3; \
-        prob = probs.coeff[pelem][FFMIN(index, probs.length[pelem] - 1)]; \
+        prob = s->probs.coeff[pelem][FFMIN(index, s->probs.length[pelem] - 1)]; \
     } else \
         prob = 128; \
     predict >>= 15; \
@@ -287,7 +287,6 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     GetBitContext gb;
     Arith ac;
 //FIXME: struct
-    Table probs;
     unsigned int half_prob[DST_MAX_CHANNELS];
     unsigned int map_ch_to_felem[DST_MAX_CHANNELS];
     unsigned int map_ch_to_pelem[DST_MAX_CHANNELS];
@@ -342,10 +341,10 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         return ret;
 
     if (same) {
-        probs.elements = s->fsets.elements;
+        s->probs.elements = s->fsets.elements;
         memcpy(map_ch_to_pelem, map_ch_to_felem, sizeof(map_ch_to_pelem));
     } else
-        if ((ret = read_map(&gb, &probs, map_ch_to_pelem, avctx->channels)) < 0)
+        if ((ret = read_map(&gb, &s->probs, map_ch_to_pelem, avctx->channels)) < 0)
             return ret;
 
     /* Half Probability (10.10) */
@@ -359,7 +358,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     /* Probability Tables (10.13) */
 
-    read_table(&gb, &probs, probs_code_pred_coeff, 6, 7, 0, 1);
+    read_table(&gb, &s->probs, probs_code_pred_coeff, 6, 7, 0, 1);
 
     /* Arithmetic Coded Data (10.11) */
 
