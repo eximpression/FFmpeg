@@ -120,7 +120,8 @@ static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
     s->sample_aspect_ratio = (AVRational){0,1};
     s->pix_fmt             = AV_PIX_FMT_NONE;
     s->sample_fmt          = AV_SAMPLE_FMT_NONE;
-
+    s->dop_output          = 0;
+    
     s->reordered_opaque    = AV_NOPTS_VALUE;
     if(codec && codec->priv_data_size){
         if(!s->priv_data){
