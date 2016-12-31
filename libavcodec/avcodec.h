@@ -3217,6 +3217,11 @@ typedef struct AVCodecContext {
      * - encoding: unused
      */
     int trailing_padding;
+    
+    /**
+     * support dop output other than dsd2pcm
+     */
+    int dop_output;
 
     /**
      * The number of pixels per image to maximally accept.
@@ -4192,6 +4197,11 @@ int avcodec_parameters_copy(AVCodecParameters *dst, const AVCodecParameters *src
  */
 int avcodec_parameters_from_context(AVCodecParameters *par,
                                     const AVCodecContext *codec);
+
+/**
+ * change dop output flag
+ */
+int avcodec_set_dop_output(AVCodecContext *codec, int dop);
 
 /**
  * Fill the codec context based on the values from the supplied codec

@@ -61,38 +61,81 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static void reverse_memcpy(uint8_t *dst, const uint8_t *src, int size)
+{
+    int i;
+    for (i = 0; i < size; i++)
+        dst[i] = ff_reverse[src[i]];
+}
+
 static int decode_frame(AVCodecContext *avctx, void *data,
                         int *got_frame_ptr, AVPacket *avpkt)
 {
-    DSDContext * s = avctx->priv_data;
-    AVFrame *frame = data;
-    int ret, i;
-    int lsbf = avctx->codec_id == AV_CODEC_ID_DSD_LSBF || avctx->codec_id == AV_CODEC_ID_DSD_LSBF_PLANAR;
-    int src_next;
-    int src_stride;
-
-    frame->nb_samples = avpkt->size / avctx->channels;
-
-    if (avctx->codec_id == AV_CODEC_ID_DSD_LSBF_PLANAR || avctx->codec_id == AV_CODEC_ID_DSD_MSBF_PLANAR) {
-        src_next   = frame->nb_samples;
-        src_stride = 1;
-    } else {
-        src_next   = 1;
-        src_stride = avctx->channels;
+    if (avctx->dop_output == 1 ) {
+        const uint8_t * src = avpkt->data;
+        AVFrame *frame = data;
+        int ret, ch;
+        
+        frame->nb_samples = avpkt->size / avctx->channels;
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+            return ret;
+        
+        switch(avctx->codec_id) {
+            case AV_CODEC_ID_DSD_LSBF:
+                reverse_memcpy(frame->data[0], src, frame->nb_samples * avctx->channels);
+                break;
+            case AV_CODEC_ID_DSD_MSBF:
+                memcpy(frame->data[0], src, frame->nb_samples * avctx->channels);
+                break;
+            case AV_CODEC_ID_DSD_LSBF_PLANAR:
+                for (ch = 0; ch < avctx->channels; ch++ ) {
+                    reverse_memcpy(frame->extended_data[ch], src, frame->nb_samples);
+                    src += frame->nb_samples;
+                }
+                break;
+            case AV_CODEC_ID_DSD_MSBF_PLANAR:
+                for (ch = 0; ch < avctx->channels; ch++ ) {
+                    memcpy(frame->extended_data[ch], src, frame->nb_samples);
+                    src += frame->nb_samples;
+                }
+                break;
+            default:
+                return -1;
+        }
+        *got_frame_ptr = 1;
+        return frame->nb_samples * avctx->channels;
+    }else {
+        DSDContext * s = avctx->priv_data;
+        AVFrame *frame = data;
+        int ret, i;
+        int lsbf = avctx->codec_id == AV_CODEC_ID_DSD_LSBF || avctx->codec_id == AV_CODEC_ID_DSD_LSBF_PLANAR;
+        int src_next;
+        int src_stride;
+        
+        frame->nb_samples = avpkt->size / avctx->channels;
+        
+        if (avctx->codec_id == AV_CODEC_ID_DSD_LSBF_PLANAR || avctx->codec_id == AV_CODEC_ID_DSD_MSBF_PLANAR) {
+            src_next   = frame->nb_samples;
+            src_stride = 1;
+        } else {
+            src_next   = 1;
+            src_stride = avctx->channels;
+        }
+        
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+            return ret;
+        
+        for (i = 0; i < avctx->channels; i++) {
+            float * dst = ((float **)frame->extended_data)[i];
+            ff_dsd2pcm_translate(&s[i], frame->nb_samples, lsbf,
+                                 avpkt->data + i * src_next, src_stride,
+                                 dst, 1);
+        }
+        
+        *got_frame_ptr = 1;
+        return frame->nb_samples * avctx->channels;
     }
-
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
-
-    for (i = 0; i < avctx->channels; i++) {
-        float * dst = ((float **)frame->extended_data)[i];
-        ff_dsd2pcm_translate(&s[i], frame->nb_samples, lsbf,
-            avpkt->data + i * src_next, src_stride,
-            dst, 1);
-    }
-
-    *got_frame_ptr = 1;
-    return frame->nb_samples * avctx->channels;
+    
 }
 
 #define DSD_DECODER(id_, name_, long_name_) \

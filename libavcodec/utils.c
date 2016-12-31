@@ -2075,6 +2075,10 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
     return 0;
 }
 
+int avcodec_set_dop_output(AVCodecContext *codec, int dop){
+    codec->dop_output = dop;
+}
+
 int avcodec_parameters_to_context(AVCodecContext *codec,
                                   const AVCodecParameters *par)
 {
