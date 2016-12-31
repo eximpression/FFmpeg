@@ -69,7 +69,8 @@ static int dsf_read_header(AVFormatContext *s)
     AVStream *st;
     uint64_t id3pos;
     unsigned int channel_type;
-
+    uint64_t sampleCount;
+    
     avio_skip(pb, 4);
     if (avio_rl64(pb) != 28)
         return AVERROR_INVALIDDATA;
@@ -123,6 +124,12 @@ static int dsf_read_header(AVFormatContext *s)
     }
 
     dsf->audio_size = avio_rl64(pb) / 8 * st->codecpar->channels;
+    //avio_skip(pb, 8);// skip sample count ?? why
+    sampleCount = avio_rl64(pb);
+    if (sampleCount > 0) {
+        st->duration = sampleCount * st->time_base.den / (st->codecpar->sample_rate * 8LL);
+    }
+
     st->codecpar->block_align = avio_rl32(pb);
     if (st->codecpar->block_align > INT_MAX / st->codecpar->channels) {
         avpriv_request_sample(s, "block_align overflow");
