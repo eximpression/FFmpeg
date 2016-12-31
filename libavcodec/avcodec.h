@@ -4201,7 +4201,7 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
 /**
  * change dop output flag
  */
-int avcodec_set_dop_output(AVCodecContext *codec, int dop);
+void avcodec_set_dop_output(AVCodecContext *codec, int dop);
 
 /**
  * Fill the codec context based on the values from the supplied codec
