@@ -182,7 +182,10 @@ static int string_is_ascii(const uint8_t *str)
     return !*str;
 }
 
-int ff_ape_write_tag(AVFormatContext *s)
+int ff_ape_write_tag(AVFormatContext *s){
+    return ff_ape_write_tag_with_artwork(s, NULL, 0);
+}
+int ff_ape_write_tag_with_artwork(AVFormatContext *s,char *artwork_data, int artwork_data_len)
 {
     AVDictionaryEntry *e = NULL;
     int size, ret, count = 0;
@@ -206,6 +209,15 @@ int ff_ape_write_tag(AVFormatContext *s)
         avio_wl32(dyn_bc, 0);                  // item flags
         avio_put_str(dyn_bc, e->key);          // key
         avio_write(dyn_bc, e->value, val_len); // value
+        count++;
+    }
+    if(artwork_data != NULL && artwork_data_len > 0){
+        int val_len;
+        char *album_key = "album_image";
+        avio_wl32(dyn_bc, artwork_data_len);            // value length
+        avio_wl32(dyn_bc, APE_TAG_FLAG_IS_BINARY);                  // item flags
+        avio_put_str(dyn_bc, album_key);          // key
+        avio_write(dyn_bc, artwork_data, artwork_data_len); // value
         count++;
     }
     if (!count)

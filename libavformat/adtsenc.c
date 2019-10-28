@@ -40,6 +40,8 @@ typedef struct ADTSContext {
     int pce_size;
     int apetag;
     int id3v2tag;
+    char*  artwork_data;                    ///artwork image data with image name header e.g. a.png\0+imagedata
+    int    artwork_data_len;                ///length of the artwork
     uint8_t pce_data[MAX_PCE_SIZE];
 } ADTSContext;
 
@@ -204,17 +206,23 @@ static int adts_write_trailer(AVFormatContext *s)
     ADTSContext *adts = s->priv_data;
 
     if (adts->apetag)
-        ff_ape_write_tag(s);
-
+        if(adts->artwork_data_len > 0 && adts->artwork_data != NULL){
+            ff_ape_write_tag_with_artwork(s, adts->artwork_data, adts->artwork_data_len);
+        }else{
+            ff_ape_write_tag(s);
+        }
     return 0;
 }
 
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
+#define DEC AV_OPT_FLAG_DECODING_PARAM
 #define OFFSET(obj) offsetof(ADTSContext, obj)
 static const AVOption options[] = {
     { "write_id3v2",  "Enable ID3v2 tag writing", OFFSET(id3v2tag), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, ENC},
     { "write_apetag", "Enable APE tag writing",   OFFSET(apetag),   AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, ENC},
-    { NULL },
+    {"artwork_data", "Artwork image data with image name header.", OFFSET(artwork_data), AV_OPT_TYPE_BINARY, .flags = DEC},
+    {"artwork_data_len", "Length of the artwork_data", OFFSET(artwork_data_len), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC},
+    { NULL }
 };
 
 static const AVClass adts_muxer_class = {
