@@ -42,4 +42,9 @@ int64_t ff_ape_parse_tag(AVFormatContext *s);
  */
 int ff_ape_write_tag(AVFormatContext *s);
 
+/**
+ * Write an APE tag into a file,with album image
+ */
+int ff_ape_write_tag_with_artwork(AVFormatContext *s,char *artwork_data, int artwork_data_len);
+
 #endif /* AVFORMAT_APETAG_H */
