@@ -1,0 +1,223 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXFileReference section */
+		14E0842A236E90B40049875D /* ismindex.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ismindex.c; sourceTree = "<group>"; };
+		14E0842B236E90B40049875D /* target_dec_fuzzer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = target_dec_fuzzer.c; sourceTree = "<group>"; };
+		14E0842C236E90B40049875D /* pktdumper.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pktdumper.c; sourceTree = "<group>"; };
+		14E0842D236E90B40049875D /* clean-diff */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "clean-diff"; sourceTree = "<group>"; };
+		14E0842E236E90B40049875D /* target_dec_fate.list */ = {isa = PBXFileReference; lastKnownFileType = text; path = target_dec_fate.list; sourceTree = "<group>"; };
+		14E0842F236E90B40049875D /* yuvcmp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = yuvcmp.c; sourceTree = "<group>"; };
+		14E08430236E90B40049875D /* python */ = {isa = PBXFileReference; lastKnownFileType = folder; path = python; sourceTree = "<group>"; };
+		14E08431236E90B40049875D /* libav-merge-next-commit */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "libav-merge-next-commit"; sourceTree = "<group>"; };
+		14E08432236E90B40049875D /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		14E08433236E90B40049875D /* fourcc2pixfmt.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = fourcc2pixfmt.c; sourceTree = "<group>"; };
+		14E08434236E90B40049875D /* cws2fws.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cws2fws.c; sourceTree = "<group>"; };
+		14E08435236E90B40049875D /* normalize.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = normalize.py; sourceTree = "<group>"; };
+		14E08436236E90B40049875D /* make_chlayout_test */ = {isa = PBXFileReference; lastKnownFileType = text; path = make_chlayout_test; sourceTree = "<group>"; };
+		14E08437236E90B40049875D /* qt-faststart.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "qt-faststart.c"; sourceTree = "<group>"; };
+		14E08438236E90B40049875D /* sofa2wavs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sofa2wavs.c; sourceTree = "<group>"; };
+		14E08439236E90B40049875D /* crypto_bench.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = crypto_bench.c; sourceTree = "<group>"; };
+		14E0843A236E90B40049875D /* sidxindex.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sidxindex.c; sourceTree = "<group>"; };
+		14E0843B236E90B40049875D /* bookmarklets.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = bookmarklets.html; sourceTree = "<group>"; };
+		14E0843C236E90B40049875D /* cl2c */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = cl2c; sourceTree = "<group>"; };
+		14E0843D236E90B40049875D /* coverity.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = coverity.c; sourceTree = "<group>"; };
+		14E0843E236E90B40049875D /* unwrap-diff */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "unwrap-diff"; sourceTree = "<group>"; };
+		14E0843F236E90B40049875D /* gen-rc */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "gen-rc"; sourceTree = "<group>"; };
+		14E08440236E90B40049875D /* plotframes */ = {isa = PBXFileReference; lastKnownFileType = text; path = plotframes; sourceTree = "<group>"; };
+		14E08441236E90B40049875D /* aviocat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = aviocat.c; sourceTree = "<group>"; };
+		14E08442236E90B40049875D /* zmqshell.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = zmqshell.py; sourceTree = "<group>"; };
+		14E08443236E90B40049875D /* uncoded_frame.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = uncoded_frame.c; sourceTree = "<group>"; };
+		14E08444236E90B40049875D /* enum_options.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = enum_options.c; sourceTree = "<group>"; };
+		14E08445236E90B40049875D /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		14E08446236E90B40049875D /* patcheck */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = patcheck; sourceTree = "<group>"; };
+		14E08447236E90B40049875D /* murge */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = murge; sourceTree = "<group>"; };
+		14E08448236E90B40049875D /* ffescape.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ffescape.c; sourceTree = "<group>"; };
+		14E08449236E90B40049875D /* missing_codec_desc */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = missing_codec_desc; sourceTree = "<group>"; };
+		14E0844A236E90B40049875D /* dvd2concat */ = {isa = PBXFileReference; lastKnownFileType = text; path = dvd2concat; sourceTree = "<group>"; };
+		14E0844B236E90B40049875D /* zmqsend.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = zmqsend.c; sourceTree = "<group>"; };
+		14E0844C236E90B40049875D /* ffhash.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ffhash.c; sourceTree = "<group>"; };
+		14E0844D236E90B40049875D /* graph2dot.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = graph2dot.c; sourceTree = "<group>"; };
+		14E0844E236E90B40049875D /* target_dec_fate.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = target_dec_fate.sh; sourceTree = "<group>"; };
+		14E0844F236E90B40049875D /* seek_print.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = seek_print.c; sourceTree = "<group>"; };
+		14E08450236E90B40049875D /* trasher.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = trasher.c; sourceTree = "<group>"; };
+		14E08451236E90B40049875D /* target_dem_fuzzer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = target_dem_fuzzer.c; sourceTree = "<group>"; };
+		14E08452236E90B40049875D /* ffeval.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ffeval.c; sourceTree = "<group>"; };
+		14E08453236E90B40049875D /* probetest.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = probetest.c; sourceTree = "<group>"; };
+		14E08454236E90B40049875D /* bisect-create */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "bisect-create"; sourceTree = "<group>"; };
+		14E08455236E90B40049875D /* loudnorm.rb */ = {isa = PBXFileReference; lastKnownFileType = text.script.ruby; path = loudnorm.rb; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		14E08424236E90B40049875D = {
+			isa = PBXGroup;
+			children = (
+				14E0842A236E90B40049875D /* ismindex.c */,
+				14E0842B236E90B40049875D /* target_dec_fuzzer.c */,
+				14E0842C236E90B40049875D /* pktdumper.c */,
+				14E0842D236E90B40049875D /* clean-diff */,
+				14E0842E236E90B40049875D /* target_dec_fate.list */,
+				14E0842F236E90B40049875D /* yuvcmp.c */,
+				14E08430236E90B40049875D /* python */,
+				14E08431236E90B40049875D /* libav-merge-next-commit */,
+				14E08432236E90B40049875D /* Makefile */,
+				14E08433236E90B40049875D /* fourcc2pixfmt.c */,
+				14E08434236E90B40049875D /* cws2fws.c */,
+				14E08435236E90B40049875D /* normalize.py */,
+				14E08436236E90B40049875D /* make_chlayout_test */,
+				14E08437236E90B40049875D /* qt-faststart.c */,
+				14E08438236E90B40049875D /* sofa2wavs.c */,
+				14E08439236E90B40049875D /* crypto_bench.c */,
+				14E0843A236E90B40049875D /* sidxindex.c */,
+				14E0843B236E90B40049875D /* bookmarklets.html */,
+				14E0843C236E90B40049875D /* cl2c */,
+				14E0843D236E90B40049875D /* coverity.c */,
+				14E0843E236E90B40049875D /* unwrap-diff */,
+				14E0843F236E90B40049875D /* gen-rc */,
+				14E08440236E90B40049875D /* plotframes */,
+				14E08441236E90B40049875D /* aviocat.c */,
+				14E08442236E90B40049875D /* zmqshell.py */,
+				14E08443236E90B40049875D /* uncoded_frame.c */,
+				14E08444236E90B40049875D /* enum_options.c */,
+				14E08445236E90B40049875D /* .gitignore */,
+				14E08446236E90B40049875D /* patcheck */,
+				14E08447236E90B40049875D /* murge */,
+				14E08448236E90B40049875D /* ffescape.c */,
+				14E08449236E90B40049875D /* missing_codec_desc */,
+				14E0844A236E90B40049875D /* dvd2concat */,
+				14E0844B236E90B40049875D /* zmqsend.c */,
+				14E0844C236E90B40049875D /* ffhash.c */,
+				14E0844D236E90B40049875D /* graph2dot.c */,
+				14E0844E236E90B40049875D /* target_dec_fate.sh */,
+				14E0844F236E90B40049875D /* seek_print.c */,
+				14E08450236E90B40049875D /* trasher.c */,
+				14E08451236E90B40049875D /* target_dem_fuzzer.c */,
+				14E08452236E90B40049875D /* ffeval.c */,
+				14E08453236E90B40049875D /* probetest.c */,
+				14E08454236E90B40049875D /* bisect-create */,
+				14E08455236E90B40049875D /* loudnorm.rb */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXLegacyTarget section */
+		14E08429236E90B40049875D /* tools */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "$(ACTION)";
+			buildConfigurationList = 14E08456236E90B40049875D /* Build configuration list for PBXLegacyTarget "tools" */;
+			buildPhases = (
+			);
+			buildToolPath = /usr/bin/make;
+			buildWorkingDirectory = /Users/chaozhang/Documents/Personal/Gits/FFmpeg/tools;
+			dependencies = (
+			);
+			name = tools;
+			passBuildSettingsInEnvironment = 1;
+			productName = tools;
+		};
+/* End PBXLegacyTarget section */
+
+/* Begin PBXProject section */
+		14E08425236E90B40049875D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+			};
+			buildConfigurationList = 14E08428236E90B40049875D /* Build configuration list for PBXProject "tools" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 14E08424236E90B40049875D;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				14E08429236E90B40049875D /* tools */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin XCBuildConfiguration section */
+		14E08426236E90B40049875D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				COPY_PHASE_STRIP = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx10.6;
+			};
+			name = Debug;
+		};
+		14E08427236E90B40049875D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				COPY_PHASE_STRIP = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				SDKROOT = macosx10.6;
+			};
+			name = Release;
+		};
+		14E08457236E90B40049875D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUGGING_SYMBOLS = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = tools;
+			};
+			name = Debug;
+		};
+		14E08458236E90B40049875D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = tools;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		14E08428236E90B40049875D /* Build configuration list for PBXProject "tools" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				14E08426236E90B40049875D /* Debug */,
+				14E08427236E90B40049875D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		14E08456236E90B40049875D /* Build configuration list for PBXLegacyTarget "tools" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				14E08457236E90B40049875D /* Debug */,
+				14E08458236E90B40049875D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 14E08425236E90B40049875D /* Project object */;
+}

@@ -1,0 +1,225 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXFileReference section */
+		14E0838C236E90B40049875D /* libswresample.v */ = {isa = PBXFileReference; lastKnownFileType = text; path = libswresample.v; sourceTree = "<group>"; };
+		14E0838D236E90B40049875D /* resample.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = resample.o; sourceTree = "<group>"; };
+		14E0838E236E90B40049875D /* resample.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = resample.h; sourceTree = "<group>"; };
+		14E0838F236E90B40049875D /* rematrix.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rematrix.c; sourceTree = "<group>"; };
+		14E08390236E90B40049875D /* rematrix.d */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.dtrace; path = rematrix.d; sourceTree = "<group>"; };
+		14E08391236E90B40049875D /* resample_dsp.d */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.dtrace; path = resample_dsp.d; sourceTree = "<group>"; };
+		14E08392236E90B40049875D /* resample_dsp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = resample_dsp.c; sourceTree = "<group>"; };
+		14E08393236E90B40049875D /* version.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
+		14E08394236E90B40049875D /* rematrix_template.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rematrix_template.c; sourceTree = "<group>"; };
+		14E08395236E90B40049875D /* resample_template.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = resample_template.c; sourceTree = "<group>"; };
+		14E08396236E90B40049875D /* dither.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = dither.o; sourceTree = "<group>"; };
+		14E08397236E90B40049875D /* audioconvert.d */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.dtrace; path = audioconvert.d; sourceTree = "<group>"; };
+		14E08398236E90B40049875D /* swresample_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = swresample_internal.h; sourceTree = "<group>"; };
+		14E08399236E90B40049875D /* audioconvert.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = audioconvert.c; sourceTree = "<group>"; };
+		14E0839A236E90B40049875D /* swresampleres.rc */ = {isa = PBXFileReference; lastKnownFileType = text; path = swresampleres.rc; sourceTree = "<group>"; };
+		14E0839B236E90B40049875D /* libswresample.pc */ = {isa = PBXFileReference; lastKnownFileType = text; path = libswresample.pc; sourceTree = "<group>"; };
+		14E0839C236E90B40049875D /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		14E0839D236E90B40049875D /* log2_tab.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log2_tab.c; sourceTree = "<group>"; };
+		14E0839E236E90B40049875D /* libswresample.version */ = {isa = PBXFileReference; lastKnownFileType = text; path = libswresample.version; sourceTree = "<group>"; };
+		14E0839F236E90B40049875D /* tests */ = {isa = PBXFileReference; lastKnownFileType = folder; path = tests; sourceTree = "<group>"; };
+		14E083A0236E90B40049875D /* dither_template.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dither_template.c; sourceTree = "<group>"; };
+		14E083A1236E90B40049875D /* swresample_frame.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = swresample_frame.o; sourceTree = "<group>"; };
+		14E083A2236E90B40049875D /* options.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = options.o; sourceTree = "<group>"; };
+		14E083A3236E90B40049875D /* swresample.d */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.dtrace; path = swresample.d; sourceTree = "<group>"; };
+		14E083A4236E90B40049875D /* swresample.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = swresample.c; sourceTree = "<group>"; };
+		14E083A5236E90B40049875D /* noise_shaping_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = noise_shaping_data.c; sourceTree = "<group>"; };
+		14E083A6236E90B40049875D /* resample_dsp.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = resample_dsp.o; sourceTree = "<group>"; };
+		14E083A7236E90B40049875D /* rematrix.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = rematrix.o; sourceTree = "<group>"; };
+		14E083A8236E90B40049875D /* resample.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = resample.c; sourceTree = "<group>"; };
+		14E083A9236E90B40049875D /* resample.d */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.dtrace; path = resample.d; sourceTree = "<group>"; };
+		14E083AA236E90B40049875D /* libswresample.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libswresample.a; sourceTree = "<group>"; };
+		14E083AB236E90B40049875D /* x86 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = x86; sourceTree = "<group>"; };
+		14E083AC236E90B40049875D /* audioconvert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = audioconvert.h; sourceTree = "<group>"; };
+		14E083AD236E90B40049875D /* audioconvert.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = audioconvert.o; sourceTree = "<group>"; };
+		14E083AE236E90B40049875D /* dither.d */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.dtrace; path = dither.d; sourceTree = "<group>"; };
+		14E083AF236E90B40049875D /* dither.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dither.c; sourceTree = "<group>"; };
+		14E083B0236E90B40049875D /* arm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = arm; sourceTree = "<group>"; };
+		14E083B1236E90B40049875D /* aarch64 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = aarch64; sourceTree = "<group>"; };
+		14E083B2236E90B40049875D /* swresample.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = swresample.h; sourceTree = "<group>"; };
+		14E083B3236E90B40049875D /* swresample.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = swresample.o; sourceTree = "<group>"; };
+		14E083B4236E90B40049875D /* swresample_frame.d */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.dtrace; path = swresample_frame.d; sourceTree = "<group>"; };
+		14E083B5236E90B40049875D /* swresample_frame.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = swresample_frame.c; sourceTree = "<group>"; };
+		14E083B6236E90B40049875D /* options.d */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.dtrace; path = options.d; sourceTree = "<group>"; };
+		14E083B7236E90B40049875D /* options.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = options.c; sourceTree = "<group>"; };
+		14E083B8236E90B40049875D /* soxr_resample.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = soxr_resample.c; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		14E08386236E90B40049875D = {
+			isa = PBXGroup;
+			children = (
+				14E0838C236E90B40049875D /* libswresample.v */,
+				14E0838D236E90B40049875D /* resample.o */,
+				14E0838E236E90B40049875D /* resample.h */,
+				14E0838F236E90B40049875D /* rematrix.c */,
+				14E08390236E90B40049875D /* rematrix.d */,
+				14E08391236E90B40049875D /* resample_dsp.d */,
+				14E08392236E90B40049875D /* resample_dsp.c */,
+				14E08393236E90B40049875D /* version.h */,
+				14E08394236E90B40049875D /* rematrix_template.c */,
+				14E08395236E90B40049875D /* resample_template.c */,
+				14E08396236E90B40049875D /* dither.o */,
+				14E08397236E90B40049875D /* audioconvert.d */,
+				14E08398236E90B40049875D /* swresample_internal.h */,
+				14E08399236E90B40049875D /* audioconvert.c */,
+				14E0839A236E90B40049875D /* swresampleres.rc */,
+				14E0839B236E90B40049875D /* libswresample.pc */,
+				14E0839C236E90B40049875D /* Makefile */,
+				14E0839D236E90B40049875D /* log2_tab.c */,
+				14E0839E236E90B40049875D /* libswresample.version */,
+				14E0839F236E90B40049875D /* tests */,
+				14E083A0236E90B40049875D /* dither_template.c */,
+				14E083A1236E90B40049875D /* swresample_frame.o */,
+				14E083A2236E90B40049875D /* options.o */,
+				14E083A3236E90B40049875D /* swresample.d */,
+				14E083A4236E90B40049875D /* swresample.c */,
+				14E083A5236E90B40049875D /* noise_shaping_data.c */,
+				14E083A6236E90B40049875D /* resample_dsp.o */,
+				14E083A7236E90B40049875D /* rematrix.o */,
+				14E083A8236E90B40049875D /* resample.c */,
+				14E083A9236E90B40049875D /* resample.d */,
+				14E083AA236E90B40049875D /* libswresample.a */,
+				14E083AB236E90B40049875D /* x86 */,
+				14E083AC236E90B40049875D /* audioconvert.h */,
+				14E083AD236E90B40049875D /* audioconvert.o */,
+				14E083AE236E90B40049875D /* dither.d */,
+				14E083AF236E90B40049875D /* dither.c */,
+				14E083B0236E90B40049875D /* arm */,
+				14E083B1236E90B40049875D /* aarch64 */,
+				14E083B2236E90B40049875D /* swresample.h */,
+				14E083B3236E90B40049875D /* swresample.o */,
+				14E083B4236E90B40049875D /* swresample_frame.d */,
+				14E083B5236E90B40049875D /* swresample_frame.c */,
+				14E083B6236E90B40049875D /* options.d */,
+				14E083B7236E90B40049875D /* options.c */,
+				14E083B8236E90B40049875D /* soxr_resample.c */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXLegacyTarget section */
+		14E0838B236E90B40049875D /* libswresample */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "$(ACTION)";
+			buildConfigurationList = 14E083B9236E90B40049875D /* Build configuration list for PBXLegacyTarget "libswresample" */;
+			buildPhases = (
+			);
+			buildToolPath = /usr/bin/make;
+			buildWorkingDirectory = /Users/chaozhang/Documents/Personal/Gits/FFmpeg/libswresample;
+			dependencies = (
+			);
+			name = libswresample;
+			passBuildSettingsInEnvironment = 1;
+			productName = libswresample;
+		};
+/* End PBXLegacyTarget section */
+
+/* Begin PBXProject section */
+		14E08387236E90B40049875D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+			};
+			buildConfigurationList = 14E0838A236E90B40049875D /* Build configuration list for PBXProject "libswresample" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 14E08386236E90B40049875D;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				14E0838B236E90B40049875D /* libswresample */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin XCBuildConfiguration section */
+		14E08388236E90B40049875D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				COPY_PHASE_STRIP = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx10.6;
+			};
+			name = Debug;
+		};
+		14E08389236E90B40049875D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				COPY_PHASE_STRIP = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				SDKROOT = macosx10.6;
+			};
+			name = Release;
+		};
+		14E083BA236E90B40049875D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUGGING_SYMBOLS = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = libswresample;
+			};
+			name = Debug;
+		};
+		14E083BB236E90B40049875D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = libswresample;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		14E0838A236E90B40049875D /* Build configuration list for PBXProject "libswresample" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				14E08388236E90B40049875D /* Debug */,
+				14E08389236E90B40049875D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		14E083B9236E90B40049875D /* Build configuration list for PBXLegacyTarget "libswresample" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				14E083BA236E90B40049875D /* Debug */,
+				14E083BB236E90B40049875D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 14E08387236E90B40049875D /* Project object */;
+}
