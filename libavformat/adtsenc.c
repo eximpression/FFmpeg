@@ -205,12 +205,13 @@ static int adts_write_trailer(AVFormatContext *s)
 {
     ADTSContext *adts = s->priv_data;
 
-    if (adts->apetag)
+    if (adts->apetag){
         if(adts->artwork_data_len > 0 && adts->artwork_data != NULL){
             ff_ape_write_tag_with_artwork(s, adts->artwork_data, adts->artwork_data_len);
         }else{
             ff_ape_write_tag(s);
         }
+    }
     return 0;
 }
 
