@@ -122,7 +122,14 @@ static int dsf_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    dsf->audio_size = avio_rl64(pb) / 8 * st->codecpar->channels;
+    uint64_t sampleCount = avio_rl64(pb);
+    
+    dsf->audio_size = sampleCount / 8 * st->codecpar->channels;
+    //精确计算duration
+    if (sampleCount > 0) {
+        st->duration = sampleCount * st->time_base.den / (st->codecpar->sample_rate * 8LL);
+    }
+
     st->codecpar->block_align = avio_rl32(pb);
     if (st->codecpar->block_align > INT_MAX / st->codecpar->channels) {
         avpriv_request_sample(s, "block_align overflow");
