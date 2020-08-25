@@ -631,7 +631,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->metadata = s->internal->id3v2_meta;
         s->internal->id3v2_meta = NULL;
     } else if (s->internal->id3v2_meta) {
-        av_log(s, AV_LOG_WARNING, "Discarding ID3 tags because more suitable tags were found.\n");
+        av_log(s, AV_LOG_WARNING, "Merge ID3 tags because more tags were found.\n");
+        av_dict_copy(&s->metadata, s->internal->id3v2_meta, AV_DICT_DONT_OVERWRITE);
         av_dict_free(&s->internal->id3v2_meta);
     }
 
