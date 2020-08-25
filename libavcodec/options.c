@@ -123,6 +123,7 @@ static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
     s->pix_fmt             = AV_PIX_FMT_NONE;
     s->sw_pix_fmt          = AV_PIX_FMT_NONE;
     s->sample_fmt          = AV_SAMPLE_FMT_NONE;
+    s->dop_output          = 0;
 
 #if FF_API_REORDERED_OPAQUE
 FF_DISABLE_DEPRECATION_WARNINGS

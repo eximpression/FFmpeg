@@ -96,23 +96,121 @@ static int dsd_channel(AVCodecContext *avctx, void *tdata, int j, int threadnr)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
-                        int *got_frame_ptr, AVPacket *avpkt)
+static void stride_memcpy(uint8_t *dst, const uint8_t *src, int src_size, int is_reverse, int is_plannar)
 {
-    ThreadData td;
-    int ret;
+    
+    if (is_plannar) {
+        int i;
+        for (i = 0; i < src_size;){
+            uint8_t a = 0;
+            uint8_t b = 0;
+            int j = 2 * i;
+            uint8_t flag = 0x05;
+            if((i%4) != 0) {
+                flag = 0xfa;
+            }
+            if (is_reverse) {
+                a = ff_reverse[src[i]];
+                b = ff_reverse[src[i+1]];
+            }else{
+                a = src[i];
+                b = src[i+1];
+            }
+            dst[j] = 0;
+            dst[j+1] = b;
+            dst[j+2] = a;
+            dst[j+3] = flag;
+            i = i + 2;
+        }
+    }else{
+        int i;
+        for (i = 0; i < src_size;){
+            uint8_t a = 0;
+            uint8_t b = 0;
+            uint8_t c = 0;
+            uint8_t d = 0;
+            int step = i + src_size;
+            uint8_t flag = 0x05;
+            if((i%8) != 0) {
+                flag = 0xfa;
+            }
+            if (is_reverse) {
+                a = ff_reverse[src[i]];
+                b = ff_reverse[src[i+1]];
+                c = ff_reverse[src[i+2]];
+                d = ff_reverse[src[i+3]];
+            }else{
+                a = src[i];
+                b = src[i+1];
+                c = src[i+2];
+                d = src[i+3];
+            }
+            dst[i] = 0;
+            dst[i+1] = c;
+            dst[i+2] = a;
+            dst[i+3] = flag;
+            
+            dst[step] = 0;
+            dst[step+1] = d;
+            dst[step+2] = b;
+            dst[step+3] = flag;
+            
+            i = i + 4;
+        }
+    }
+}
 
-    frame->nb_samples = avpkt->size / avctx->ch_layout.nb_channels;
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                            int *got_frame_ptr, AVPacket *avpkt)
+{
+    if (avctx->dop_output == 1 ){
+        const uint8_t * src = avpkt->data;
+        int ret, ch;
+        
+        frame->nb_samples = avpkt->size / avctx->ch_layout.nb_channels;
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+            return ret;
+        
+        switch(avctx->codec_id) {
+            case AV_CODEC_ID_DSD_LSBF:
+                stride_memcpy(frame->data[0], src, frame->nb_samples * avctx->ch_layout.nb_channels, 1, 0);
+                break;
+            case AV_CODEC_ID_DSD_MSBF:
+                stride_memcpy(frame->data[0], src, frame->nb_samples * avctx->ch_layout.nb_channels, 0, 0);
+                break;
+            case AV_CODEC_ID_DSD_LSBF_PLANAR:
+                for (ch = 0; ch < avctx->ch_layout.nb_channels; ch++ ) {
+                    stride_memcpy(frame->extended_data[ch], src, frame->nb_samples, 1, 1);
+                    src += frame->nb_samples;
+                }
+                break;
+            case AV_CODEC_ID_DSD_MSBF_PLANAR:
+                for (ch = 0; ch < avctx->ch_layout.nb_channels; ch++ ) {
+                    stride_memcpy(frame->extended_data[ch], src, frame->nb_samples, 0, 1);
+                    src += frame->nb_samples;
+                }
+                break;
+            default:
+                return -1;
+        }
+        *got_frame_ptr = 1;
+        return frame->nb_samples * avctx->ch_layout.nb_channels;
+    }else{
+        ThreadData td;
+        int ret;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
+        frame->nb_samples = avpkt->size / avctx->ch_layout.nb_channels;
 
-    td.frame = frame;
-    td.avpkt = avpkt;
-    avctx->execute2(avctx, dsd_channel, &td, NULL, avctx->ch_layout.nb_channels);
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+            return ret;
 
-    *got_frame_ptr = 1;
-    return frame->nb_samples * avctx->ch_layout.nb_channels;
+        td.frame = frame;
+        td.avpkt = avpkt;
+        avctx->execute2(avctx, dsd_channel, &td, NULL, avctx->ch_layout.nb_channels);
+
+        *got_frame_ptr = 1;
+        return frame->nb_samples * avctx->ch_layout.nb_channels;
+    }
 }
 
 #define DSD_DECODER(id_, name_, long_name_) \
