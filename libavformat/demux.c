@@ -323,7 +323,8 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
         s->metadata    = si->id3v2_meta;
         si->id3v2_meta = NULL;
     } else if (si->id3v2_meta) {
-        av_log(s, AV_LOG_WARNING, "Discarding ID3 tags because more suitable tags were found.\n");
+        av_log(s, AV_LOG_WARNING, "Merge ID3 tags because more tags were found.\n");
+        av_dict_copy(&s->metadata, si->id3v2_meta, AV_DICT_DONT_OVERWRITE);
         av_dict_free(&si->id3v2_meta);
     }
 
