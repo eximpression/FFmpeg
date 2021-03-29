@@ -2161,6 +2161,10 @@ void avcodec_set_dop_output(AVCodecContext *codec, int dop){
     codec->dop_output = dop;
 }
 
+void avcodec_set_dop_copy_memory(AVCodecContext *codec, int dop_copy_memory){
+    codec->dop_copy_memory = dop_copy_memory;
+}
+
 int avcodec_parameters_to_context(AVCodecContext *codec,
                                   const AVCodecParameters *par)
 {
