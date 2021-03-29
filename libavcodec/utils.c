@@ -807,6 +807,10 @@ void avcodec_set_dop_output(AVCodecContext *codec, int dop){
     codec->dop_output = dop;
 }
 
+void avcodec_set_dop_copy_memory(AVCodecContext *codec, int dop_copy_memory){
+    codec->dop_copy_memory = dop_copy_memory;
+}
+
 int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
 {
     int duration = get_audio_frame_duration(avctx->codec_id, avctx->sample_rate,

@@ -1883,6 +1883,10 @@ typedef struct AVCodecContext {
     int dop_output;
 
     /**
+     * dop output copy memory in ffmpeg default no
+     */
+    int dop_copy_memory;
+    /**
      * The number of pixels per image to maximally accept.
      *
      * - decoding: set by user
@@ -2374,6 +2378,11 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
  * change dop output flag
  */
 void avcodec_set_dop_output(AVCodecContext *codec, int dop);
+
+/**
+ * change dop copy memory flag
+ */
+void avcodec_set_dop_copy_memory(AVCodecContext *codec, int dop_copy_memory);
 
 /**
  * Fill the codec context based on the values from the supplied codec

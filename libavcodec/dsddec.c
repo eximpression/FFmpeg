@@ -94,6 +94,13 @@ static int dsd_channel(AVCodecContext *avctx, void *tdata, int j, int threadnr)
     return 0;
 }
 
+static void reverse_memcpy(uint8_t *dst, const uint8_t *src, int size)
+{
+    int i;
+    for (i = 0; i < size; i++)
+        dst[i] = ff_reverse[src[i]];
+}
+
 static void stride_memcpy(uint8_t *dst, const uint8_t *src, int src_size, int is_reverse, int is_plannar)
 {
     
@@ -161,7 +168,8 @@ static void stride_memcpy(uint8_t *dst, const uint8_t *src, int src_size, int is
 static int decode_frame(AVCodecContext *avctx, void *data,
                         int *got_frame_ptr, AVPacket *avpkt)
 {
-    if (avctx->dop_output == 1 ){
+    if (avctx->dop_output == 1 ) {
+        int dop_copy_memory = avctx->dop_copy_memory;
         const uint8_t * src = avpkt->data;
         AVFrame *frame = data;
         int ret, ch;
@@ -172,20 +180,37 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         
         switch(avctx->codec_id) {
             case AV_CODEC_ID_DSD_LSBF:
-                stride_memcpy(frame->data[0], src, frame->nb_samples * avctx->channels, 1, 0);
+                if (dop_copy_memory == 0) {
+                    reverse_memcpy(frame->data[0], src, frame->nb_samples * avctx->channels);
+                }else{
+                    stride_memcpy(frame->data[0], src, frame->nb_samples * avctx->channels, 1, 0);
+                }
                 break;
             case AV_CODEC_ID_DSD_MSBF:
-                stride_memcpy(frame->data[0], src, frame->nb_samples * avctx->channels, 0, 0);
+                if (dop_copy_memory == 0) {
+                    memcpy(frame->data[0], src, frame->nb_samples * avctx->channels);
+                }else{
+                    stride_memcpy(frame->data[0], src, frame->nb_samples * avctx->channels, 0, 0);
+                }
                 break;
             case AV_CODEC_ID_DSD_LSBF_PLANAR:
                 for (ch = 0; ch < avctx->channels; ch++ ) {
-                    stride_memcpy(frame->extended_data[ch], src, frame->nb_samples, 1, 1);
+                    if (dop_copy_memory == 0) {
+                        reverse_memcpy(frame->extended_data[ch], src, frame->nb_samples);
+                    }else{
+                        stride_memcpy(frame->extended_data[ch], src, frame->nb_samples, 1, 1);
+                    }
+                    
                     src += frame->nb_samples;
                 }
                 break;
             case AV_CODEC_ID_DSD_MSBF_PLANAR:
                 for (ch = 0; ch < avctx->channels; ch++ ) {
-                    stride_memcpy(frame->extended_data[ch], src, frame->nb_samples, 0, 1);
+                    if (dop_copy_memory == 0) {
+                        memcpy(frame->extended_data[ch], src, frame->nb_samples);
+                    }else{
+                        stride_memcpy(frame->extended_data[ch], src, frame->nb_samples, 0, 1);
+                    }
                     src += frame->nb_samples;
                 }
                 break;
@@ -194,7 +219,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         }
         *got_frame_ptr = 1;
         return frame->nb_samples * avctx->channels;
-    }else{
+    }else {
         ThreadData td;
         AVFrame *frame = data;
         int ret;
