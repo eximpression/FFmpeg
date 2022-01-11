@@ -46,32 +46,35 @@ static void libsmbc_get_auth_data(SMBCCTX *c, const char *server, const char *sh
 static av_cold int libsmbc_connect(URLContext *h)
 {
     LIBSMBContext *libsmbc = h->priv_data;
+    if (smbc_set_context(NULL)) {
+        libsmbc->ctx = smbc_set_context(NULL);
+    }else{
+        libsmbc->ctx = smbc_new_context();
+        if (!libsmbc->ctx) {
+            int ret = AVERROR(errno);
+            av_log(h, AV_LOG_ERROR, "Cannot create context: %s.\n", strerror(errno));
+            return ret;
+        }
+        if (!smbc_init_context(libsmbc->ctx)) {
+            int ret = AVERROR(errno);
+            av_log(h, AV_LOG_ERROR, "Cannot initialize context: %s.\n", strerror(errno));
+            return ret;
+        }
+        smbc_set_context(libsmbc->ctx);
+        
+        smbc_setOptionUserData(libsmbc->ctx, h);
+        smbc_setFunctionAuthDataWithContext(libsmbc->ctx, libsmbc_get_auth_data);
+        
+        if (libsmbc->timeout != -1)
+            smbc_setTimeout(libsmbc->ctx, libsmbc->timeout);
+        if (libsmbc->workgroup)
+            smbc_setWorkgroup(libsmbc->ctx, libsmbc->workgroup);
 
-    libsmbc->ctx = smbc_new_context();
-    if (!libsmbc->ctx) {
-        int ret = AVERROR(errno);
-        av_log(h, AV_LOG_ERROR, "Cannot create context: %s.\n", strerror(errno));
-        return ret;
-    }
-    if (!smbc_init_context(libsmbc->ctx)) {
-        int ret = AVERROR(errno);
-        av_log(h, AV_LOG_ERROR, "Cannot initialize context: %s.\n", strerror(errno));
-        return ret;
-    }
-    smbc_set_context(libsmbc->ctx);
-
-    smbc_setOptionUserData(libsmbc->ctx, h);
-    smbc_setFunctionAuthDataWithContext(libsmbc->ctx, libsmbc_get_auth_data);
-
-    if (libsmbc->timeout != -1)
-        smbc_setTimeout(libsmbc->ctx, libsmbc->timeout);
-    if (libsmbc->workgroup)
-        smbc_setWorkgroup(libsmbc->ctx, libsmbc->workgroup);
-
-    if (smbc_init(NULL, 0) < 0) {
-        int ret = AVERROR(errno);
-        av_log(h, AV_LOG_ERROR, "Initialization failed: %s\n", strerror(errno));
-        return ret;
+        if (smbc_init(NULL, 0) < 0) {
+            int ret = AVERROR(errno);
+            av_log(h, AV_LOG_ERROR, "Initialization failed: %s\n", strerror(errno));
+            return ret;
+        }
     }
     return 0;
 }
@@ -84,8 +87,8 @@ static av_cold int libsmbc_close(URLContext *h)
         libsmbc->fd = -1;
     }
     if (libsmbc->ctx) {
-        smbc_free_context(libsmbc->ctx, 1);
-        libsmbc->ctx = NULL;
+//        smbc_free_context(libsmbc->ctx, 1);
+//        libsmbc->ctx = NULL;
     }
     return 0;
 }
