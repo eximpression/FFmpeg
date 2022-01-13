@@ -46,22 +46,33 @@ static void libsmbc_get_auth_data(SMBCCTX *c, const char *server, const char *sh
 static av_cold int libsmbc_connect(URLContext *h)
 {
     LIBSMBContext *libsmbc = h->priv_data;
-    if (smbc_set_context(NULL)) {
-        libsmbc->ctx = smbc_set_context(NULL);
+    pthread_mutex_lock(&smb_lock);
+    SMBCCTX *old_context = smbc_set_context(NULL);
+    pthread_mutex_unlock(&smb_lock);
+    if (old_context) {
+        av_log(h, AV_LOG_WARNING, "libsmbc->ctx = smbc_set_context(NULL)\n");
+        libsmbc->ctx = old_context;
     }else{
+        av_log(h, AV_LOG_WARNING, "libsmbc->ctx = smbc_new_context()\n");
+        pthread_mutex_lock(&smb_lock);
         libsmbc->ctx = smbc_new_context();
+        pthread_mutex_unlock(&smb_lock);
         if (!libsmbc->ctx) {
             int ret = AVERROR(errno);
             av_log(h, AV_LOG_ERROR, "Cannot create context: %s.\n", strerror(errno));
             return ret;
         }
-        if (!smbc_init_context(libsmbc->ctx)) {
+        pthread_mutex_lock(&smb_lock);
+        SMBCCTX *init_context = smbc_init_context(libsmbc->ctx);
+        pthread_mutex_unlock(&smb_lock);
+        if (!init_context) {
             int ret = AVERROR(errno);
             av_log(h, AV_LOG_ERROR, "Cannot initialize context: %s.\n", strerror(errno));
             return ret;
         }
-        smbc_set_context(libsmbc->ctx);
         
+        pthread_mutex_lock(&smb_lock);
+        smbc_set_context(libsmbc->ctx);
         smbc_setOptionUserData(libsmbc->ctx, h);
         smbc_setFunctionAuthDataWithContext(libsmbc->ctx, libsmbc_get_auth_data);
         
@@ -69,8 +80,11 @@ static av_cold int libsmbc_connect(URLContext *h)
             smbc_setTimeout(libsmbc->ctx, libsmbc->timeout);
         if (libsmbc->workgroup)
             smbc_setWorkgroup(libsmbc->ctx, libsmbc->workgroup);
-
-        if (smbc_init(NULL, 0) < 0) {
+        
+        int init_ret = smbc_init(NULL, 0);
+        pthread_mutex_unlock(&smb_lock);
+        
+        if (init_ret < 0) {
             int ret = AVERROR(errno);
             av_log(h, AV_LOG_ERROR, "Initialization failed: %s\n", strerror(errno));
             return ret;
@@ -83,7 +97,9 @@ static av_cold int libsmbc_close(URLContext *h)
 {
     LIBSMBContext *libsmbc = h->priv_data;
     if (libsmbc->fd >= 0) {
+        pthread_mutex_lock(&smb_lock);
         smbc_close(libsmbc->fd);
+        pthread_mutex_unlock(&smb_lock);
         libsmbc->fd = -1;
     }
     if (libsmbc->ctx) {
@@ -117,13 +133,18 @@ static av_cold int libsmbc_open(URLContext *h, const char *url, int flags)
         access = O_RDONLY;
 
     /* 0666 = -rw-rw-rw- = read+write for everyone, minus umask */
-    if ((libsmbc->fd = smbc_open(url, access, 0666)) < 0) {
+    pthread_mutex_lock(&smb_lock);
+    libsmbc->fd = smbc_open(url, access, 0666);
+    pthread_mutex_unlock(&smb_lock);
+    if (libsmbc->fd < 0) {
         ret = AVERROR(errno);
         av_log(h, AV_LOG_ERROR, "File open failed: %s\n", strerror(errno));
         goto fail;
     }
-
-    if (smbc_fstat(libsmbc->fd, &st) < 0)
+    pthread_mutex_lock(&smb_lock);
+    int fstat_ret = smbc_fstat(libsmbc->fd, &st);
+    pthread_mutex_unlock(&smb_lock);
+    if (fstat_ret < 0)
         av_log(h, AV_LOG_WARNING, "Cannot stat file: %s\n", strerror(errno));
     else
         libsmbc->filesize = st.st_size;
@@ -146,8 +167,10 @@ static int64_t libsmbc_seek(URLContext *h, int64_t pos, int whence)
         } else
             return libsmbc->filesize;
     }
-
-    if ((newpos = smbc_lseek(libsmbc->fd, pos, whence)) < 0) {
+    pthread_mutex_lock(&smb_lock);
+    newpos = smbc_lseek(libsmbc->fd, pos, whence);
+    pthread_mutex_unlock(&smb_lock);
+    if (newpos < 0) {
         int err = errno;
         av_log(h, AV_LOG_ERROR, "Error during seeking: %s\n", strerror(err));
         return AVERROR(err);
@@ -159,9 +182,11 @@ static int64_t libsmbc_seek(URLContext *h, int64_t pos, int whence)
 static int libsmbc_read(URLContext *h, unsigned char *buf, int size)
 {
     LIBSMBContext *libsmbc = h->priv_data;
-    int bytes_read;
+    pthread_mutex_lock(&smb_lock);
+    int bytes_read = smbc_read(libsmbc->fd, buf, size);
+    pthread_mutex_unlock(&smb_lock);
 
-    if ((bytes_read = smbc_read(libsmbc->fd, buf, size)) < 0) {
+    if (bytes_read < 0) {
         int ret = AVERROR(errno);
         av_log(h, AV_LOG_ERROR, "Read error: %s\n", strerror(errno));
         return ret;
@@ -173,9 +198,11 @@ static int libsmbc_read(URLContext *h, unsigned char *buf, int size)
 static int libsmbc_write(URLContext *h, const unsigned char *buf, int size)
 {
     LIBSMBContext *libsmbc = h->priv_data;
-    int bytes_written;
-
-    if ((bytes_written = smbc_write(libsmbc->fd, buf, size)) < 0) {
+    pthread_mutex_lock(&smb_lock);
+    int bytes_written = smbc_write(libsmbc->fd, buf, size);
+    pthread_mutex_unlock(&smb_lock);
+    
+    if (bytes_written < 0) {
         int ret = AVERROR(errno);
         av_log(h, AV_LOG_ERROR, "Write error: %s\n", strerror(errno));
         return ret;
@@ -191,8 +218,10 @@ static int libsmbc_open_dir(URLContext *h)
 
     if ((ret = libsmbc_connect(h)) < 0)
         goto fail;
-
-    if ((libsmbc->dh = smbc_opendir(h->filename)) < 0) {
+    pthread_mutex_lock(&smb_lock);
+    libsmbc->dh = smbc_opendir(h->filename);
+    pthread_mutex_unlock(&smb_lock);
+    if (libsmbc->dh < 0) {
         ret = AVERROR(errno);
         av_log(h, AV_LOG_ERROR, "Error opening dir: %s\n", strerror(errno));
         goto fail;
@@ -219,7 +248,9 @@ static int libsmbc_read_dir(URLContext *h, AVIODirEntry **next)
 
     do {
         skip_entry = 0;
+        pthread_mutex_lock(&smb_lock);
         dirent = smbc_readdir(libsmbc->dh);
+        pthread_mutex_unlock(&smb_lock);
         if (!dirent) {
             av_freep(next);
             return 0;
@@ -262,7 +293,11 @@ static int libsmbc_read_dir(URLContext *h, AVIODirEntry **next)
     url = av_append_path_component(h->filename, dirent->name);
     if (url) {
         struct stat st;
-        if (!smbc_stat(url, &st)) {
+        pthread_mutex_lock(&smb_lock);
+        int stat_ret = smbc_stat(url, &st);
+        pthread_mutex_unlock(&smb_lock);
+        
+        if (!stat_ret) {
             entry->group_id = st.st_gid;
             entry->user_id = st.st_uid;
             entry->size = st.st_size;
@@ -281,7 +316,9 @@ static int libsmbc_close_dir(URLContext *h)
 {
     LIBSMBContext *libsmbc = h->priv_data;
     if (libsmbc->dh >= 0) {
+        pthread_mutex_lock(&smb_lock);
         smbc_closedir(libsmbc->dh);
+        pthread_mutex_unlock(&smb_lock);
         libsmbc->dh = -1;
     }
     libsmbc_close(h);
@@ -296,27 +333,40 @@ static int libsmbc_delete(URLContext *h)
 
     if ((ret = libsmbc_connect(h)) < 0)
         goto cleanup;
-
-    if ((libsmbc->fd = smbc_open(h->filename, O_WRONLY, 0666)) < 0) {
+    
+    pthread_mutex_lock(&smb_lock);
+    libsmbc->fd = smbc_open(h->filename, O_WRONLY, 0666);
+    pthread_mutex_unlock(&smb_lock);
+    if (libsmbc->fd < 0) {
         ret = AVERROR(errno);
         goto cleanup;
     }
-
-    if (smbc_fstat(libsmbc->fd, &st) < 0) {
+    
+    pthread_mutex_lock(&smb_lock);
+    int fstat_ret = smbc_fstat(libsmbc->fd, &st);
+    pthread_mutex_unlock(&smb_lock);
+    if (fstat_ret < 0) {
         ret = AVERROR(errno);
         goto cleanup;
     }
-
+    pthread_mutex_lock(&smb_lock);
     smbc_close(libsmbc->fd);
+    pthread_mutex_unlock(&smb_lock);
     libsmbc->fd = -1;
 
     if (S_ISDIR(st.st_mode)) {
-        if (smbc_rmdir(h->filename) < 0) {
+        pthread_mutex_lock(&smb_lock);
+        int rmdir_ret = smbc_rmdir(h->filename);
+        pthread_mutex_unlock(&smb_lock);
+        if (rmdir_ret < 0) {
             ret = AVERROR(errno);
             goto cleanup;
         }
     } else {
-        if (smbc_unlink(h->filename) < 0) {
+        pthread_mutex_lock(&smb_lock);
+        int unlink_ret = smbc_unlink(h->filename);
+        pthread_mutex_unlock(&smb_lock);
+        if (unlink_ret < 0) {
             ret = AVERROR(errno);
             goto cleanup;
         }
@@ -337,7 +387,10 @@ static int libsmbc_move(URLContext *h_src, URLContext *h_dst)
     if ((ret = libsmbc_connect(h_src)) < 0)
         goto cleanup;
 
-    if ((libsmbc->dh = smbc_rename(h_src->filename, h_dst->filename)) < 0) {
+    pthread_mutex_lock(&smb_lock);
+    libsmbc->dh = smbc_rename(h_src->filename, h_dst->filename);
+    pthread_mutex_unlock(&smb_lock);
+    if (libsmbc->dh < 0) {
         ret = AVERROR(errno);
         goto cleanup;
     }
