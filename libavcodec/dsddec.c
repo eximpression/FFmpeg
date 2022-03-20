@@ -27,6 +27,7 @@
  */
 
 #include "libavcodec/internal.h"
+#include "libavutil/reverse.h"
 #include "avcodec.h"
 #include "dsd.h"
 
