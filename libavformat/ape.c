@@ -29,7 +29,7 @@
 
 /* The earliest and latest file formats supported by this library */
 #define APE_MIN_VERSION 3800
-#define APE_MAX_VERSION 3990
+#define APE_MAX_VERSION 4110
 
 #define MAC_FORMAT_FLAG_8_BIT                 1 // is 8-bit [OBSOLETE]
 #define MAC_FORMAT_FLAG_CRC                   2 // uses the new CRC32 error detection [OBSOLETE]
