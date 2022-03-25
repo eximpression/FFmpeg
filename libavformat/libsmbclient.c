@@ -46,48 +46,55 @@ static void libsmbc_get_auth_data(SMBCCTX *c, const char *server, const char *sh
 static av_cold int libsmbc_connect(URLContext *h)
 {
     LIBSMBContext *libsmbc = h->priv_data;
-    pthread_mutex_lock(&smb_lock);
-    SMBCCTX *old_context = smbc_set_context(NULL);
-    pthread_mutex_unlock(&smb_lock);
+    SMBCCTX *old_context = NULL;
+    requestExternalCtx(&old_context);
     if (old_context) {
-        av_log(h, AV_LOG_WARNING, "libsmbc->ctx = smbc_set_context(NULL)\n");
+        av_log(h, AV_LOG_WARNING, "requestExternalCtx(&old_context)\n");
         libsmbc->ctx = old_context;
     }else{
-        av_log(h, AV_LOG_WARNING, "libsmbc->ctx = smbc_new_context()\n");
         pthread_mutex_lock(&smb_lock);
-        libsmbc->ctx = smbc_new_context();
+        old_context = smbc_set_context(NULL);
         pthread_mutex_unlock(&smb_lock);
-        if (!libsmbc->ctx) {
-            int ret = AVERROR(errno);
-            av_log(h, AV_LOG_ERROR, "Cannot create context: %s.\n", strerror(errno));
-            return ret;
-        }
-        pthread_mutex_lock(&smb_lock);
-        SMBCCTX *init_context = smbc_init_context(libsmbc->ctx);
-        pthread_mutex_unlock(&smb_lock);
-        if (!init_context) {
-            int ret = AVERROR(errno);
-            av_log(h, AV_LOG_ERROR, "Cannot initialize context: %s.\n", strerror(errno));
-            return ret;
-        }
-        
-        pthread_mutex_lock(&smb_lock);
-        smbc_set_context(libsmbc->ctx);
-        smbc_setOptionUserData(libsmbc->ctx, h);
-        smbc_setFunctionAuthDataWithContext(libsmbc->ctx, libsmbc_get_auth_data);
-        
-        if (libsmbc->timeout != -1)
-            smbc_setTimeout(libsmbc->ctx, libsmbc->timeout);
-        if (libsmbc->workgroup)
-            smbc_setWorkgroup(libsmbc->ctx, libsmbc->workgroup);
-        
-        int init_ret = smbc_init(NULL, 0);
-        pthread_mutex_unlock(&smb_lock);
-        
-        if (init_ret < 0) {
-            int ret = AVERROR(errno);
-            av_log(h, AV_LOG_ERROR, "Initialization failed: %s\n", strerror(errno));
-            return ret;
+        if (old_context) {
+            av_log(h, AV_LOG_WARNING, "libsmbc->ctx = smbc_set_context(NULL)\n");
+            libsmbc->ctx = old_context;
+        }else{
+            av_log(h, AV_LOG_WARNING, "libsmbc->ctx = smbc_new_context()\n");
+            pthread_mutex_lock(&smb_lock);
+            libsmbc->ctx = smbc_new_context();
+            pthread_mutex_unlock(&smb_lock);
+            if (!libsmbc->ctx) {
+                int ret = AVERROR(errno);
+                av_log(h, AV_LOG_ERROR, "Cannot create context: %s.\n", strerror(errno));
+                return ret;
+            }
+            pthread_mutex_lock(&smb_lock);
+            SMBCCTX *init_context = smbc_init_context(libsmbc->ctx);
+            pthread_mutex_unlock(&smb_lock);
+            if (!init_context) {
+                int ret = AVERROR(errno);
+                av_log(h, AV_LOG_ERROR, "Cannot initialize context: %s.\n", strerror(errno));
+                return ret;
+            }
+            
+            pthread_mutex_lock(&smb_lock);
+            smbc_set_context(libsmbc->ctx);
+            smbc_setOptionUserData(libsmbc->ctx, h);
+            smbc_setFunctionAuthDataWithContext(libsmbc->ctx, libsmbc_get_auth_data);
+            
+            if (libsmbc->timeout != -1)
+                smbc_setTimeout(libsmbc->ctx, libsmbc->timeout);
+            if (libsmbc->workgroup)
+                smbc_setWorkgroup(libsmbc->ctx, libsmbc->workgroup);
+            
+            int init_ret = smbc_init(NULL, 0);
+            pthread_mutex_unlock(&smb_lock);
+            
+            if (init_ret < 0) {
+                int ret = AVERROR(errno);
+                av_log(h, AV_LOG_ERROR, "Initialization failed: %s\n", strerror(errno));
+                return ret;
+            }
         }
     }
     return 0;
@@ -95,17 +102,21 @@ static av_cold int libsmbc_connect(URLContext *h)
 
 static av_cold int libsmbc_close(URLContext *h)
 {
+    pthread_mutex_lock(&smb_lock);
     LIBSMBContext *libsmbc = h->priv_data;
     if (libsmbc->fd >= 0) {
-        pthread_mutex_lock(&smb_lock);
         smbc_close(libsmbc->fd);
-        pthread_mutex_unlock(&smb_lock);
         libsmbc->fd = -1;
     }
+    /*
     if (libsmbc->ctx) {
-//        smbc_free_context(libsmbc->ctx, 1);
-//        libsmbc->ctx = NULL;
+        smbc_setOptionUserData(libsmbc->ctx, NULL);
+        smbc_setFunctionAuthDataWithContext(libsmbc->ctx, NULL);
+        smbc_free_context(libsmbc->ctx, 0);
+        libsmbc->ctx = NULL;
     }
+     */
+    pthread_mutex_unlock(&smb_lock);
     return 0;
 }
 
@@ -314,13 +325,14 @@ static int libsmbc_read_dir(URLContext *h, AVIODirEntry **next)
 
 static int libsmbc_close_dir(URLContext *h)
 {
+    pthread_mutex_unlock(&smb_lock);
     LIBSMBContext *libsmbc = h->priv_data;
     if (libsmbc->dh >= 0) {
         pthread_mutex_lock(&smb_lock);
         smbc_closedir(libsmbc->dh);
-        pthread_mutex_unlock(&smb_lock);
         libsmbc->dh = -1;
     }
+    pthread_mutex_unlock(&smb_lock);
     libsmbc_close(h);
     return 0;
 }
