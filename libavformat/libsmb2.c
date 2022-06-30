@@ -60,6 +60,7 @@ typedef struct {
 
 static int wait_for_reply(LIBSMB2Context *libsmb2)
 {
+    printf("libsmb2_wait_for_reply\n");
     libsmb2->is_finished = 0;
     int64_t time_elapsed = 0;
     while ( ( 0 == libsmb2->status ) && !libsmb2->is_finished) {
@@ -88,6 +89,7 @@ static int wait_for_reply(LIBSMB2Context *libsmb2)
 
 static void generic_callback(struct smb2_context *smb2, int status, void *command_data, void *private_data)
 {
+    printf("libsmb2_generic_callback\n");
     LIBSMB2Context *libsmb2 = private_data;
     if (libsmb2) {
         if (status < 0) {
@@ -100,6 +102,7 @@ static void generic_callback(struct smb2_context *smb2, int status, void *comman
 
 static void open_callback(struct smb2_context *smb2, int status, void *command_data, void *private_data)
 {
+    printf("libsmb2_open_callback\n");
     LIBSMB2Context *libsmb2 = private_data;
     if (libsmb2) {
         if (status < 0) {
@@ -113,6 +116,7 @@ static void open_callback(struct smb2_context *smb2, int status, void *command_d
 
 static void read_callback(struct smb2_context *smb2, int status, void *command_data, void *private_data)
 {
+    printf("libsmb2_read_callback\n");
     LIBSMB2Context *libsmb2 = private_data;
     if (libsmb2) {
         if (status < 0) {
@@ -126,6 +130,7 @@ static void read_callback(struct smb2_context *smb2, int status, void *command_d
 
 static void write_callback(struct smb2_context *smb2, int status, void *command_data, void *private_data)
 {
+    printf("libsmb2_write_callback\n");
     LIBSMB2Context *libsmb2 = private_data;
     if (libsmb2) {
         if (status < 0) {
@@ -139,6 +144,7 @@ static void write_callback(struct smb2_context *smb2, int status, void *command_
 
 static void opendir_callback(struct smb2_context *smb2, int status, void *command_data, void *private_data)
 {
+    printf("libsmb2_opendir_callback\n");
     LIBSMB2Context *libsmb2 = private_data;
     if (libsmb2) {
         if (status < 0) {
@@ -152,6 +158,7 @@ static void opendir_callback(struct smb2_context *smb2, int status, void *comman
 
 static av_cold int libsmb2_close(URLContext *h)
 {
+    av_log(h, AV_LOG_WARNING, "libsmb2_close\n");
     LIBSMB2Context *libsmb2 = h->priv_data;
     if (libsmb2->smb2 != NULL) {
         if (libsmb2->fh != NULL) {
@@ -184,6 +191,7 @@ static av_cold int libsmb2_close(URLContext *h)
 
 static av_cold int libsmb2_connect(URLContext *h)
 {
+    av_log(h, AV_LOG_WARNING, "libsmb2_connect\n");
     LIBSMB2Context *libsmb2 = h->priv_data;
     int ret = -1;
     const char* user = NULL;
@@ -222,6 +230,7 @@ static av_cold int libsmb2_connect(URLContext *h)
 
     share = ff_urldecode(libsmb2->url->share, 0);
     ff_dlog(h, "domain=%s server=%s share=%s user=%s\n", libsmb2->url->domain, libsmb2->url->server, share, user);
+    av_log(h, AV_LOG_WARNING, "domain=%s server=%s share=%s user=%s\n", libsmb2->url->domain, libsmb2->url->server, share, user);
     ret = smb2_connect_share_async(libsmb2->smb2, libsmb2->url->server, share, user, generic_callback, libsmb2);
     if (ret != 0) {
         av_log(h, AV_LOG_ERROR, "smb2_connect_share_async failed. %s\n", smb2_get_error(libsmb2->smb2));
@@ -233,6 +242,7 @@ static av_cold int libsmb2_connect(URLContext *h)
         goto fail;
     }
     libsmb2->connected = 1;
+    
 fail:
     if (user)
         av_freep(&user);
@@ -245,6 +255,7 @@ fail:
 
 static av_cold int libsmb2_open(URLContext *h, const char *url, int flags)
 {
+    av_log(h, AV_LOG_WARNING, "libsmb2_open\n");
     LIBSMB2Context *libsmb2 = h->priv_data;
     int access, ret;
     const char* path = NULL;
@@ -297,6 +308,7 @@ fail:
 
 static int64_t libsmb2_seek(URLContext *h, int64_t pos, int whence)
 {
+    av_log(h, AV_LOG_WARNING, "libsmb2_seek\n");
     LIBSMB2Context *libsmb2 = h->priv_data;
     if (whence == AVSEEK_SIZE) {
         if (libsmb2->filesize == -1) {
@@ -316,6 +328,7 @@ static int64_t libsmb2_seek(URLContext *h, int64_t pos, int whence)
 
 static int libsmb2_read(URLContext *h, unsigned char *buf, int size)
 {
+    av_log(h, AV_LOG_WARNING, "libsmb2_read\n");
     LIBSMB2Context *libsmb2 = h->priv_data;
     int ret = smb2_read_async(libsmb2->smb2, libsmb2->fh, buf, FFMIN(libsmb2->max_read_size, size), read_callback, libsmb2);
     if (0 != ret) {
@@ -334,6 +347,7 @@ fail:
 
 static int libsmb2_write(URLContext *h, const unsigned char *buf, int size)
 {
+    av_log(h, AV_LOG_WARNING, "libsmb2_write\n");
     LIBSMB2Context *libsmb2 = h->priv_data;
     int ret = smb2_write_async(libsmb2->smb2, libsmb2->fh, (uint8_t*)buf, size, write_callback, libsmb2);
     if (0 != ret) {
@@ -352,6 +366,7 @@ fail:
 
 static int libsmb2_open_dir(URLContext *h)
 {
+    av_log(h, AV_LOG_WARNING, "libsmb2_open_dir\n");
     LIBSMB2Context *libsmb2 = h->priv_data;
     int ret;
     const char* path = NULL;
@@ -383,6 +398,7 @@ fail:
 
 static int libsmb2_read_dir(URLContext *h, AVIODirEntry **next)
 {
+    av_log(h, AV_LOG_WARNING, "libsmb2_read_dir\n");
     LIBSMB2Context *libsmb2 = h->priv_data;
     AVIODirEntry *entry;
     struct smb2dirent *ent = NULL;
@@ -443,6 +459,7 @@ static int libsmb2_read_dir(URLContext *h, AVIODirEntry **next)
 
 static int libsmb2_close_dir(URLContext *h)
 {
+    av_log(h, AV_LOG_WARNING, "libsmb2_close_dir\n");
     LIBSMB2Context *libsmb2 = h->priv_data;
     if (libsmb2->dir != NULL) {
         smb2_closedir(libsmb2->smb2, libsmb2->dir);
@@ -454,6 +471,7 @@ static int libsmb2_close_dir(URLContext *h)
 
 static int libsmb2_delete(URLContext *h)
 {
+    av_log(h, AV_LOG_WARNING, "libsmb2_delete\n");
     LIBSMB2Context *libsmb2 = h->priv_data;
     int ret;
     const char* path = NULL;
@@ -518,6 +536,7 @@ cleanup:
 
 static int libsmb2_move(URLContext *h_src, URLContext *h_dst)
 {
+    av_log(h_src, AV_LOG_WARNING, "libsmb2_move\n");
     LIBSMB2Context *libsmb2 = h_src->priv_data;
     int ret;
 
@@ -560,7 +579,7 @@ static const AVClass libsmb2lient_context_class = {
 };
 
 const URLProtocol ff_libsmb2_protocol = {
-    .name                = "smb",
+    .name                = "smb2",
     .url_open            = libsmb2_open,
     .url_read            = libsmb2_read,
     .url_write           = libsmb2_write,
