@@ -202,8 +202,22 @@ static av_cold int libsmb2_connect(URLContext *h)
         av_log(h, AV_LOG_ERROR, "Failed to init context for smb2.\n");
         return ret;
     }
-
-    libsmb2->url = smb2_parse_url(libsmb2->smb2, h->filename);
+    
+    av_log(h, AV_LOG_WARNING, "url_orign: %s\n",h->filename);
+    if (strncmp(h->filename, "smb2://", 7) == 0) {
+        char urll[2048] = "smb://";
+        int idxToDel= 6;
+        while (h->filename[idxToDel+1] != '\0') {
+            urll[idxToDel] = h->filename[idxToDel+1];
+            idxToDel++;
+        }
+        av_log(h, AV_LOG_WARNING, "url_edit: %s\n",urll);
+        libsmb2->url = smb2_parse_url(libsmb2->smb2, urll);
+    }else{
+        av_log(h, AV_LOG_WARNING, "url_not_change\n");
+        libsmb2->url = smb2_parse_url(libsmb2->smb2, h->filename);
+    }
+    
     if (libsmb2->url == NULL) {
         av_log(h, AV_LOG_ERROR, "Failed to parse url: %s\n",smb2_get_error(libsmb2->smb2));
         goto fail;
