@@ -254,7 +254,7 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
         av_log(s, AV_LOG_ERROR, "Error opening memory stream\n");
         return ret;
     }
-
+continue_read:
     switch (encoding) {
     case ID3v2_ENCODING_ISO8859:
         while (left && ch) {
@@ -292,6 +292,16 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
         }
         if (left < 0)
             left += 2;  /* did not read last char from pb */
+        else if (left > 2){ //if not reach to end, continue read and replace '\0' to ';'
+            ch = 1;
+            if(strlen(dynbuf->buffer) > 0){
+                unsigned char *last = dynbuf->buf_ptr - 1;
+                if(*last == '\0'){
+                    *last = 0x3b;
+                }
+            }
+            goto continue_read;
+        }
         break;
 
     case ID3v2_ENCODING_UTF8:
