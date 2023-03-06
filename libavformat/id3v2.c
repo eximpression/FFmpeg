@@ -241,7 +241,7 @@ static void free_geobtag(void *obj)
  * @returns 0 if no error occurred, dst is uninitialized on error
  */
 static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
-                      uint8_t **dst, int *maxread)
+                      uint8_t **dst, int *maxread, int isttag)
 {
     int ret;
     uint8_t tmp;
@@ -292,7 +292,7 @@ continue_read:
         }
         if (left < 0)
             left += 2;  /* did not read last char from pb */
-        else if (left > 2){ //if not reach to end, continue read and replace '\0' to ';'
+        else if (left > 2 && isttag == 1){ //if not reach to end, continue read and replace '\0' to ';'
             ch = 1;
             if(strlen(dynbuf->buffer) > 0){
                 unsigned char *last = dynbuf->buf_ptr - 1;
@@ -344,7 +344,7 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen,
     encoding = avio_r8(pb);
     taglen--; /* account for encoding type byte */
 
-    if (decode_str(s, pb, encoding, &dst, &taglen) < 0) {
+    if (decode_str(s, pb, encoding, &dst, &taglen, 1) < 0) {
         av_log(s, AV_LOG_ERROR, "Error reading frame %s, skipped\n", key);
         return;
     }
@@ -357,7 +357,7 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen,
     } else if (!(strcmp(key, "TXXX") && strcmp(key, "TXX"))) {
         /* dst now contains the key, need to get value */
         key = dst;
-        if (decode_str(s, pb, encoding, &dst, &taglen) < 0) {
+        if (decode_str(s, pb, encoding, &dst, &taglen, 1) < 0) {
             av_log(s, AV_LOG_ERROR, "Error reading frame %s, skipped\n", key);
             av_freep(&key);
             return;
@@ -391,10 +391,10 @@ static void read_uslt(AVFormatContext *s, AVIOContext *pb, int taglen,
     lang[3] = '\0';
     taglen -= 3;
 
-    if (decode_str(s, pb, encoding, &descriptor, &taglen) < 0 || taglen < 0)
+    if (decode_str(s, pb, encoding, &descriptor, &taglen, 0) < 0 || taglen < 0)
         goto error;
 
-    if (decode_str(s, pb, encoding, &text, &taglen) < 0 || taglen < 0)
+    if (decode_str(s, pb, encoding, &text, &taglen, 0) < 0 || taglen < 0)
         goto error;
 
     // FFmpeg does not support hierarchical metadata, so concatenate the keys.
@@ -434,7 +434,7 @@ static void read_comment(AVFormatContext *s, AVIOContext *pb, int taglen,
     language = avio_rl24(pb);
     taglen -= 4;
 
-    if (decode_str(s, pb, encoding, &dst, &taglen) < 0) {
+    if (decode_str(s, pb, encoding, &dst, &taglen, 0) < 0) {
         av_log(s, AV_LOG_ERROR, "Error reading comment frame, skipped\n");
         return;
     }
@@ -447,7 +447,7 @@ static void read_comment(AVFormatContext *s, AVIOContext *pb, int taglen,
         dict_flags |= AV_DICT_DONT_STRDUP_KEY;
     }
 
-    if (decode_str(s, pb, encoding, &dst, &taglen) < 0) {
+    if (decode_str(s, pb, encoding, &dst, &taglen, 0) < 0) {
         av_log(s, AV_LOG_ERROR, "Error reading comment frame, skipped\n");
         if (dict_flags & AV_DICT_DONT_STRDUP_KEY)
             av_freep((void*)&key);
@@ -500,17 +500,17 @@ static void read_geobtag(AVFormatContext *s, AVIOContext *pb, int taglen,
 
     /* read MIME type (always ISO-8859) */
     if (decode_str(s, pb, ID3v2_ENCODING_ISO8859, &geob_data->mime_type,
-                   &taglen) < 0 ||
+                   &taglen, 0) < 0 ||
         taglen <= 0)
         goto fail;
 
     /* read file name */
-    if (decode_str(s, pb, encoding, &geob_data->file_name, &taglen) < 0 ||
+    if (decode_str(s, pb, encoding, &geob_data->file_name, &taglen, 0) < 0 ||
         taglen <= 0)
         goto fail;
 
     /* read content description */
-    if (decode_str(s, pb, encoding, &geob_data->description, &taglen) < 0 ||
+    if (decode_str(s, pb, encoding, &geob_data->description, &taglen, 0) < 0 ||
         taglen < 0)
         goto fail;
 
@@ -667,7 +667,7 @@ static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen,
     apic->type = ff_id3v2_picture_types[pic_type];
 
     /* description and picture data */
-    if (decode_str(s, pb, enc, &apic->description, &taglen) < 0) {
+    if (decode_str(s, pb, enc, &apic->description, &taglen, 0) < 0) {
         av_log(s, AV_LOG_ERROR,
                "Error decoding attached picture description.\n");
         goto fail;
@@ -715,7 +715,7 @@ static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len,
 
     chap = &new_extra->data.chap;
 
-    if (decode_str(s, pb, 0, &chap->element_id, &len) < 0)
+    if (decode_str(s, pb, 0, &chap->element_id, &len, 0) < 0)
         goto fail;
 
     if (len < 16)
@@ -774,7 +774,7 @@ static void read_priv(AVFormatContext *s, AVIOContext *pb, int taglen,
 
     priv = &meta->data.priv;
 
-    if (decode_str(s, pb, ID3v2_ENCODING_ISO8859, &priv->owner, &taglen) < 0)
+    if (decode_str(s, pb, ID3v2_ENCODING_ISO8859, &priv->owner, &taglen, 0) < 0)
         goto fail;
 
     priv->data = av_malloc(taglen);
