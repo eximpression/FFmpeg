@@ -22,6 +22,10 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "url.h"
+#if TARGET_OS_IPHONE
+#else
+pthread_mutex_t smb_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 typedef struct {
     const AVClass *class;
@@ -32,6 +36,8 @@ typedef struct {
     int trunc;
     int timeout;
     char *workgroup;
+    char *username;
+    char *password;
 } LIBSMBContext;
 
 static void libsmbc_get_auth_data(SMBCCTX *c, const char *server, const char *share,
@@ -41,13 +47,47 @@ static void libsmbc_get_auth_data(SMBCCTX *c, const char *server, const char *sh
 {
     /* Do nothing yet. Credentials are passed via url.
      * Callback must exists, there might be a segmentation fault otherwise. */
+    if (c == NULL) {
+        return;
+    }
+    void *userdata = smbc_getOptionUserData(c);
+    if (userdata == NULL) {
+        return;
+    }
+    URLContext *h = (URLContext *)userdata;
+    LIBSMBContext *smbContent = (LIBSMBContext *)h->priv_data;
+    if (smbContent == NULL) {
+        return;
+    }
+    if (username) {
+        if (smbContent->username) {
+            int len = FFMIN(strlen(smbContent->username), username_len-1);
+            strncpy(username, smbContent->username, len);
+        }
+    }
+    
+    if (password) {
+        if (smbContent->password) {
+            int len = FFMIN(strlen(smbContent->password), password_len-1);
+            strncpy(password, smbContent->password, len);
+        }
+    }
+    
+    if (workgroup) {
+        if (smbContent->workgroup) {
+            int len = FFMIN(strlen(smbContent->workgroup), workgroup_len-1);
+            strncpy(workgroup, smbContent->workgroup, len);
+        }
+    }
 }
 
 static av_cold int libsmbc_connect(URLContext *h)
 {
     LIBSMBContext *libsmbc = h->priv_data;
     SMBCCTX *old_context = NULL;
+#if TARGET_OS_IPHONE
     requestExternalCtx(&old_context);
+#endif
     if (old_context) {
         av_log(h, AV_LOG_WARNING, "requestExternalCtx(&old_context)\n");
         libsmbc->ctx = old_context;
@@ -62,6 +102,8 @@ static av_cold int libsmbc_connect(URLContext *h)
             av_log(h, AV_LOG_WARNING, "libsmbc->ctx = smbc_new_context()\n");
             pthread_mutex_lock(&smb_lock);
             libsmbc->ctx = smbc_new_context();
+            smbc_setOptionUserData(libsmbc->ctx, h);
+            smbc_setFunctionAuthDataWithContext(libsmbc->ctx, libsmbc_get_auth_data);
             pthread_mutex_unlock(&smb_lock);
             if (!libsmbc->ctx) {
                 int ret = AVERROR(errno);
@@ -79,8 +121,6 @@ static av_cold int libsmbc_connect(URLContext *h)
             
             pthread_mutex_lock(&smb_lock);
             smbc_set_context(libsmbc->ctx);
-            smbc_setOptionUserData(libsmbc->ctx, h);
-            smbc_setFunctionAuthDataWithContext(libsmbc->ctx, libsmbc_get_auth_data);
             
             if (libsmbc->timeout != -1)
                 smbc_setTimeout(libsmbc->ctx, libsmbc->timeout);
@@ -108,6 +148,18 @@ static av_cold int libsmbc_close(URLContext *h)
         smbc_close(libsmbc->fd);
         libsmbc->fd = -1;
     }
+    if (libsmbc->password) {
+        free(libsmbc->password);
+        libsmbc->password = NULL;
+    }
+    if (libsmbc->username) {
+        free(libsmbc->username);
+        libsmbc->username = NULL;
+    }
+    if (libsmbc->workgroup) {
+        free(libsmbc->workgroup);
+        libsmbc->workgroup = NULL;
+    }
     /*
     if (libsmbc->ctx) {
         smbc_setOptionUserData(libsmbc->ctx, NULL);
@@ -120,12 +172,47 @@ static av_cold int libsmbc_close(URLContext *h)
     return 0;
 }
 
-static av_cold int libsmbc_open(URLContext *h, const char *url, int flags)
+static av_cold int libsmbc_open(URLContext *h, const char *url, int flags, AVDictionary **options)
 {
     LIBSMBContext *libsmbc = h->priv_data;
     int access, ret;
     struct stat st;
 
+    if(*options != NULL){
+        AVDictionaryEntry *e = av_dict_get(*options, "everplay_user_name", NULL, 0);
+        if (e != NULL && e->value != NULL){
+            int leg = strlen(e->value);
+            if (libsmbc->username) {
+                free(libsmbc->username);
+                libsmbc->username = NULL;
+            }
+            libsmbc->username = malloc(leg + 1);
+            strcpy(libsmbc->username, e->value);
+        }
+        
+        e = av_dict_get(*options, "everplay_password", NULL, 0);
+        if (e != NULL && e->value != NULL){
+            int len = strlen(e->value);
+            if (libsmbc->password) {
+                free(libsmbc->password);
+                libsmbc->password = NULL;
+            }
+            libsmbc->password = malloc(len + 1);
+            strcpy(libsmbc->password, e->value);
+        }
+        
+        e = av_dict_get(*options, "everplay_workgroup", NULL, 0);
+        if (e != NULL && e->value != NULL){
+            int len = strlen(e->value);
+            if (libsmbc->workgroup) {
+                free(libsmbc->workgroup);
+                libsmbc->workgroup = NULL;
+            }
+            libsmbc->workgroup = malloc(len + 1);
+            strcpy(libsmbc->workgroup, e->value);
+        }
+    }
+    
     libsmbc->fd = -1;
     libsmbc->filesize = -1;
 
@@ -421,6 +508,8 @@ static const AVOption options[] = {
     {"timeout",   "set timeout in ms of socket I/O operations",    OFFSET(timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
     {"truncate",  "truncate existing files on write",              OFFSET(trunc),   AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, E },
     {"workgroup", "set the workgroup used for making connections", OFFSET(workgroup), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
+    {"username", "set the username used for making connections", OFFSET(username), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
+    {"password", "set the password used for making connections", OFFSET(password), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
     {NULL}
 };
 
@@ -433,7 +522,7 @@ static const AVClass libsmbclient_context_class = {
 
 const URLProtocol ff_libsmbclient_protocol = {
     .name                = "smb",
-    .url_open            = libsmbc_open,
+    .url_open2           = libsmbc_open,
     .url_read            = libsmbc_read,
     .url_write           = libsmbc_write,
     .url_seek            = libsmbc_seek,

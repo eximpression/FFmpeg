@@ -55,7 +55,8 @@ typedef struct {
     int timeout;
     char *user;
     char *password;
-    char *workgroup;
+    char *domain;
+    char *workstation;
 } LIBSMB2Context;
 
 static int wait_for_reply(LIBSMB2Context *libsmb2)
@@ -186,6 +187,23 @@ static av_cold int libsmb2_close(URLContext *h)
         smb2_destroy_url(libsmb2->url);
         libsmb2->url = NULL;
     }
+    
+    if (libsmb2->password) {
+        free(libsmb2->password);
+        libsmb2->password = NULL;
+    }
+    if (libsmb2->user) {
+        free(libsmb2->user);
+        libsmb2->user = NULL;
+    }
+    if (libsmb2->workstation) {
+        free(libsmb2->workstation);
+        libsmb2->workstation = NULL;
+    }
+    if (libsmb2->domain) {
+        free(libsmb2->domain);
+        libsmb2->domain = NULL;
+    }
     return 0;
 }
 
@@ -197,6 +215,8 @@ static av_cold int libsmb2_connect(URLContext *h)
     const char* user = NULL;
     const char* password = NULL;
     const char* share = NULL;
+    const char* workstation = NULL;
+    const char* domain = NULL;
     libsmb2->smb2 = smb2_init_context();
     if (!libsmb2->smb2) {
         av_log(h, AV_LOG_ERROR, "Failed to init context for smb2.\n");
@@ -223,22 +243,31 @@ static av_cold int libsmb2_connect(URLContext *h)
         goto fail;
     }
 
-    if (libsmb2->url->user) {
-        user = ff_urldecode(libsmb2->url->user, 0);
-        password = ff_urldecode(libsmb2->url->password, 0);
-    } else if (libsmb2->user) {
+    if (libsmb2->user) {
         user = ff_urldecode(libsmb2->user, 0);
         password = ff_urldecode(libsmb2->password, 0);
+    } else if (libsmb2->url->user) {
+        user = ff_urldecode(libsmb2->url->user, 0);
+        password = ff_urldecode(libsmb2->url->password, 0);
     } else {
         user = av_strdup("Guest");
         password = av_strdup("");
     }
+    if (libsmb2->workstation) {
+        workstation = ff_urldecode(libsmb2->workstation, 0);
+    }
+    if (libsmb2->domain) {
+        domain = ff_urldecode(libsmb2->domain, 0);
+    }else if (libsmb2->url->domain){
+        domain = ff_urldecode(libsmb2->url->domain, 0);
+    }
     smb2_set_user(libsmb2->smb2, user);
     smb2_set_password(libsmb2->smb2, password);
-    if (libsmb2->url->domain) {
-        smb2_set_domain(libsmb2->smb2, libsmb2->url->domain);
-    } else if (libsmb2->workgroup) {
-        smb2_set_domain(libsmb2->smb2, libsmb2->workgroup);
+
+    if (domain) {
+        smb2_set_domain(libsmb2->smb2, domain);
+    } else if (workstation) {
+        smb2_set_domain(libsmb2->smb2, workstation);
     }
     smb2_set_security_mode(libsmb2->smb2, SMB2_NEGOTIATE_SIGNING_ENABLED);
 
@@ -264,13 +293,66 @@ fail:
         av_freep(&password);
     if (share)
         av_freep(&share);
+    if(workstation){
+        av_freep(&workstation);
+    }
+    if(domain){
+        av_freep(&domain);
+    }
     return ret;
 }
 
-static av_cold int libsmb2_open(URLContext *h, const char *url, int flags)
+static av_cold int libsmb2_open(URLContext *h, const char *url, int flags, AVDictionary **options)
 {
     av_log(h, AV_LOG_WARNING, "libsmb2_open\n");
     LIBSMB2Context *libsmb2 = h->priv_data;
+    
+    if(*options != NULL){
+        AVDictionaryEntry *e = av_dict_get(*options, "everplay_user_name", NULL, 0);
+        if (e != NULL && e->value != NULL){
+            int leg = strlen(e->value);
+            if (libsmb2->user) {
+                free(libsmb2->user);
+                libsmb2->user = NULL;
+            }
+            libsmb2->user = malloc(leg + 1);
+            strcpy(libsmb2->user, e->value);
+        }
+        
+        e = av_dict_get(*options, "everplay_password", NULL, 0);
+        if (e != NULL && e->value != NULL){
+            int len = strlen(e->value);
+            if (libsmb2->password) {
+                free(libsmb2->password);
+                libsmb2->password = NULL;
+            }
+            libsmb2->password = malloc(len + 1);
+            strcpy(libsmb2->password, e->value);
+        }
+        
+        e = av_dict_get(*options, "everplay_workstation", NULL, 0);
+        if (e != NULL && e->value != NULL){
+            int len = strlen(e->value);
+            if (libsmb2->workstation) {
+                free(libsmb2->workstation);
+                libsmb2->workstation = NULL;
+            }
+            libsmb2->workstation = malloc(len + 1);
+            strcpy(libsmb2->workstation, e->value);
+        }
+        
+        e = av_dict_get(*options, "everplay_domain", NULL, 0);
+        if (e != NULL && e->value != NULL){
+            int len = strlen(e->value);
+            if (libsmb2->domain) {
+                free(libsmb2->domain);
+                libsmb2->domain = NULL;
+            }
+            libsmb2->domain = malloc(len + 1);
+            strcpy(libsmb2->domain, e->value);
+        }
+    }
+    
     int access, ret;
     const char* path = NULL;
     if ((ret = libsmb2_connect(h)) < 0) {
@@ -581,7 +663,8 @@ static const AVOption options[] = {
     {"truncate",  "truncate existing files on write",              OFFSET(trunc),   AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, E },
     {"user",      "set the user name used for making connections", OFFSET(user), AV_OPT_TYPE_STRING, { .str = "Guest" }, 0, 0, D|E },
     {"password",  "set the password used for making connections",  OFFSET(password), AV_OPT_TYPE_STRING, { .str = "" }, 0, 0, D|E },
-    {"workgroup", "set the workgroup used for making connections", OFFSET(workgroup), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
+    {"domain", "set the domain used for making connections", OFFSET(domain), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
+    {"workstation", "set the workstation used for making connections", OFFSET(workstation), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
     {NULL}
 };
 
@@ -594,7 +677,7 @@ static const AVClass libsmb2lient_context_class = {
 
 const URLProtocol ff_libsmb2_protocol = {
     .name                = "smb2",
-    .url_open            = libsmb2_open,
+    .url_open2           = libsmb2_open,
     .url_read            = libsmb2_read,
     .url_write           = libsmb2_write,
     .url_seek            = libsmb2_seek,
