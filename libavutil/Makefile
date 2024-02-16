@@ -92,7 +92,10 @@ HEADERS = adler32.h                                                     \
           tea.h                                                         \
           tx.h                                                          \
           film_grain_params.h                                           \
-          video_hint.h
+          video_hint.h													\
+          dst_decoder.h													\
+		  types.h														\
+		  unpack_dst.h
 
 ARCH_HEADERS = bswap.h                                                  \
                intmath.h                                                \
@@ -186,7 +189,13 @@ OBJS = adler32.o                                                        \
        video_enc_params.o                                               \
        video_hint.o                                                     \
        film_grain_params.o                                              \
-
+       ccp_calc.o														\
+       dst_ac.o															\
+       dst_data.o														\
+       dst_decoder.o													\
+       dst_fram.o														\
+       dst_init.o														\
+       unpack_dst.o														\
 
 OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
 OBJS-$(CONFIG_D3D11VA)                  += hwcontext_d3d11va.o
