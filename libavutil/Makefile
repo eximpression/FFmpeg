@@ -93,9 +93,6 @@ HEADERS = adler32.h                                                     \
           tx.h                                                          \
           film_grain_params.h                                           \
           video_hint.h													\
-          dst_decoder.h													\
-		  types.h														\
-		  unpack_dst.h
 
 ARCH_HEADERS = bswap.h                                                  \
                intmath.h                                                \
