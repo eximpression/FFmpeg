@@ -386,7 +386,7 @@ static int sacd_iso_read_header(AVFormatContext *s)
         sacd->num_tracks = numTracks;
 
         snprintf(value, 255, "%d", numTracks);
-        av_dict_set(&s->metadata, "sacd_total_tracks", value, 0);
+        av_dict_set(&s->metadata, "tracktotal", value, 0);
         if(numTracks <= 0){
             return AVERROR_INVALIDDATA;
         }
