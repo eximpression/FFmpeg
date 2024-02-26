@@ -814,14 +814,19 @@ static int sacd_iso_read_packet(AVFormatContext *s, AVPacket *pkt)
         ret = sacd_read(s, dst, copySize);
         
     }
-    pkt->pts = sacd->current_block * sacd->pcm_sample_per_block;
+    //8 is 2822400 / 352800, becasue we set avpriv_set_pts_info(st, 64, 1, 2822400), not avpriv_set_pts_info(st, 64, 1, 352800), so here we need to multiply 8 to match the time_base.den
+    pkt->pts = sacd->current_block * sacd->pcm_sample_per_block * 8 ;
+    
     sacd->current_block++;
         
     pkt->pos = -1;
     pkt->size = ret;
     pkt->stream_index = 0;
-    
-    pkt->duration = ret / channels;
+    //8 is 2822400 / 352800, becasue we set avpriv_set_pts_info(st, 64, 1, 2822400), not avpriv_set_pts_info(st, 64, 1, 352800), so here we need to multiply 8 to match the time_base.den
+    pkt->duration = ret * 8 / channels;
+//    double seconds = (double)(pkt->pts) / 2822400.0;
+//    double duration_sec = (double)pkt->duration * 8.0 / 2822400.0;
+//    av_log(s, AV_LOG_ERROR, "sacd read pkt pts:%f, duration:%f\n", seconds, duration_sec);
     return 0;
 }
 
