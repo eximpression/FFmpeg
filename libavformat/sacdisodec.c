@@ -76,28 +76,32 @@ static int sacd_iso_probe(const AVProbeData *p)
 }
 
 static int sacd_seek(AVFormatContext *s, off_t pos){
+    av_log(s, AV_LOG_ERROR, "sacd seek pos:%lld\n", pos);
     SACDISOContext *sacd = s->priv_data;
     AVIOContext *pb = s->pb;
     
     int i;
     for(i=1;i<sacd->num_tracks;i++) {
         SACDISOTrack track = sacd->tracks[i];
-        if (track.index * 588 * 8 * 2 > pos) {
+        if (track.origin_index * 588 * 8 * 2 > pos) {
             break;
         }
     }
     
     //double posInTrack = pos - [(XLDTrack *)[trackList objectAtIndex:i-1] index]*588*8*2;
-    double posInTrack = (double)(sacd->tracks[i-1].index) * 588 * 8 * 2;
+    double posInTrack = (double)(pos - (sacd->tracks[i-1].origin_index) * 588 * 8 * 2);
+    //av_log(s, AV_LOG_ERROR, "sacd seek i:%d, posInTrack:%f\n", i, posInTrack);
     double trackLength;
     if(i==sacd->num_tracks) trackLength = sacd->tracks[i-1].total_frames * 588 * 8 * 2;
-    else trackLength = (sacd->tracks[i].index - sacd->tracks[i-1].index) * 588 * 8 * 2;
+    else trackLength = (sacd->tracks[i].origin_index - sacd->tracks[i-1].origin_index) * 588 * 8 * 2;
     double relativePos = posInTrack / trackLength;
+    //av_log(s, AV_LOG_ERROR, "sacd seek trackLength:%f, relativePos:%f\n", trackLength, relativePos);
     sacd->currentLSN = sacd->trackLSN[i-1] + (int)(relativePos * (sacd->trackLSN[i] - sacd->trackLSN[i-1]));
     if(sacd->currentLSN >= sacd->trackLSN[0]+5) sacd->currentLSN -= 5;
     
     off_t estimatedPos = (off_t)sacd->currentLSN * 2048;
     //if(fseeko(fp,estimatedPos,SEEK_SET)) return NO;
+    av_log(s, AV_LOG_ERROR, "sacd seek estimatedPos:%lld\n",estimatedPos);
     int64_t new_pos = avio_seek(pb, estimatedPos, SEEK_SET);
     if (new_pos < 0) {
         return 0;
@@ -252,6 +256,7 @@ static int sacd_iso_seek(AVFormatContext *s, int stream_index,
     AVIOContext *pb = s->pb;
     double offset_time = 0;
     double position = (double)timestamp / st->time_base.den;
+    av_log(s, AV_LOG_ERROR, "sacd seek position:%f\n", position);
     int i = 0;
     SACDISOTrack *track = NULL;
     for (i = sacd->num_tracks - 1; sacd->num_tracks >= 0; i--) {
@@ -270,6 +275,8 @@ static int sacd_iso_seek(AVFormatContext *s, int stream_index,
         offset_time = track->duration - 5;
     }
     
+    av_log(s, AV_LOG_ERROR, "sacd seek track index:%d, offset_time:%f\n", track->track_num,offset_time);
+    
     int64_t framesToPlay = 0;
     int64_t totalFrame = sacd->total_pcm_samples;
     if(trackIndex == sacd->num_tracks - 1) { //last track
@@ -283,6 +290,7 @@ static int sacd_iso_seek(AVFormatContext *s, int stream_index,
         seekPoint = totalFrame;
     }
     sacd->current_block = seekPoint / sacd->pcm_sample_per_block;
+    //av_log(s, AV_LOG_ERROR, "sacd seek track seekpoint:%lld, current block:%lld\n", seekPoint,sacd->current_block);
     sacd_seek(s, sacd->current_block * sacd->block_size);
 
     return 0;
