@@ -73,7 +73,8 @@ typedef struct HTTPAuthState {
 
 void ff_http_auth_handle_header(HTTPAuthState *state, const char *key,
                                 const char *value);
-char *ff_http_auth_create_response(HTTPAuthState *state, const char *auth,
+char *ff_http_auth_create_response(HTTPAuthState *state, const char *auth, const char *username,
+                                   const char *password,
                                    const char *path, const char *method);
 
 #endif /* AVFORMAT_HTTPAUTH_H */

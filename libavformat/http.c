@@ -183,7 +183,8 @@ static const AVOption options[] = {
 };
 
 static int http_connect(URLContext *h, const char *path, const char *local_path,
-                        const char *hoststr, const char *auth,
+                        const char *hoststr, const char *auth,const char *username,
+                        const char *password,
                         const char *proxyauth);
 static int http_read_header(URLContext *h);
 static int http_shutdown(URLContext *h, int flags);
@@ -205,14 +206,35 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
     char *hashmark;
     char hostname[1024], hoststr[1024], proto[10];
     char auth[1024], proxyauth[1024] = "";
+    char username[512] = "";
+    char password[512] = "";
     char path1[MAX_URL_SIZE], sanitized_path[MAX_URL_SIZE + 1];
     char buf[1024], urlbuf[MAX_URL_SIZE];
     int port, use_proxy, err = 0;
     HTTPContext *s = h->priv_data;
-
+    memset(auth, 0, 1024);
+    memset(username, 0, 512);
+    memset(password, 0, 512);
+     AVDictionaryEntry *e = av_dict_get(*options, "everplay_user_name", NULL, 0);
+     if (e != NULL && e->value != NULL){
+         strncpy(username, e->value, 511);
+     }
+     
+    e = av_dict_get(*options, "everplay_password", NULL, 0);
+     if (e != NULL && e->value != NULL){
+         strncpy(password, e->value, 511);
+     }
+     
     av_url_split(proto, sizeof(proto), auth, sizeof(auth),
                  hostname, sizeof(hostname), &port,
                  path1, sizeof(path1), s->location);
+    if (strlen(auth) == 0 &&(strlen(password) != 0 || strlen(username) != 0)) {
+        strcat(auth, username);
+        int len = strlen(username);
+        auth[len] = ':';
+        strcat(auth, password);
+    }
+    
     ff_url_join(hoststr, sizeof(hoststr), NULL, NULL, hostname, port, NULL);
 
     env_http_proxy = getenv_utf8("http_proxy");
@@ -272,7 +294,7 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
 end:
     freeenv_utf8(env_http_proxy);
     return err < 0 ? err : http_connect(
-        h, path, local_path, hoststr, auth, proxyauth);
+        h, path, local_path, hoststr, auth, username, password, proxyauth);
 }
 
 static int http_should_reconnect(HTTPContext *s, int err)
@@ -1398,7 +1420,8 @@ static void bprint_escaped_path(AVBPrint *bp, const char *path)
 }
 
 static int http_connect(URLContext *h, const char *path, const char *local_path,
-                        const char *hoststr, const char *auth,
+                        const char *hoststr, const char *auth,const char *username,
+                        const char *password,
                         const char *proxyauth)
 {
     HTTPContext *s = h->priv_data;
@@ -1426,9 +1449,9 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     else
         method = post ? "POST" : "GET";
 
-    authstr      = ff_http_auth_create_response(&s->auth_state, auth,
+    authstr      = ff_http_auth_create_response(&s->auth_state, auth,username,password,
                                                 local_path, method);
-    proxyauthstr = ff_http_auth_create_response(&s->proxy_auth_state, proxyauth,
+    proxyauthstr = ff_http_auth_create_response(&s->proxy_auth_state, proxyauth,username,password,
                                                 local_path, method);
 
      if (post && !s->post_data) {
@@ -2073,7 +2096,7 @@ redo:
     if (ret < 0)
         return ret;
 
-    authstr = ff_http_auth_create_response(&s->proxy_auth_state, auth,
+    authstr = ff_http_auth_create_response(&s->proxy_auth_state, auth,NULL, NULL,
                                            path, "CONNECT");
     snprintf(s->buffer, sizeof(s->buffer),
              "CONNECT %s HTTP/1.1\r\n"

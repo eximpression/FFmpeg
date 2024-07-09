@@ -236,7 +236,8 @@ static char *make_digest_auth(HTTPAuthState *state, const char *username,
     return authstr;
 }
 
-char *ff_http_auth_create_response(HTTPAuthState *state, const char *auth,
+char *ff_http_auth_create_response(HTTPAuthState *state, const char *auth, const char *username,
+                                   const char *password,
                                    const char *path, const char *method)
 {
     char *authstr = NULL;
@@ -269,16 +270,20 @@ char *ff_http_auth_create_response(HTTPAuthState *state, const char *auth,
         av_strlcat(ptr, "\r\n", len - (ptr - authstr));
         av_free(decoded_auth);
     } else if (state->auth_type == HTTP_AUTH_DIGEST) {
-        char *username = ff_urldecode(auth, 0), *password;
-
-        if (!username)
-            return NULL;
-
-        if ((password = strchr(username, ':'))) {
-            *password++ = 0;
+        if (strlen(password) != 0 || strlen(username) != 0) {
             authstr = make_digest_auth(state, username, password, path, method);
+        }else{
+            char *username1 = ff_urldecode(auth, 0), *password1;
+
+            if (!username1)
+                return NULL;
+
+            if ((password1 = strchr(username1, ':'))) {
+                *password1++ = 0;
+                authstr = make_digest_auth(state, username1, password1, path, method);
+            }
+            av_free(username);
         }
-        av_free(username);
     }
     return authstr;
 }

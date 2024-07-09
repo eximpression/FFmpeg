@@ -1367,7 +1367,7 @@ static int rtsp_send_cmd_with_content_async(AVFormatContext *s,
     }
     if (rt->auth[0]) {
         char *str = ff_http_auth_create_response(&rt->auth_state,
-                                                 rt->auth, url, method);
+                                                 rt->auth,NULL, NULL, url, method);
         if (str)
             av_strlcat(buf, str, sizeof(buf));
         av_free(str);

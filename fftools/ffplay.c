@@ -2775,6 +2775,8 @@ static int read_thread(void *arg)
         av_dict_set(&format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
         scan_all_pmts_set = 1;
     }
+//    av_dict_set(&format_opts, "everplay_user_name", "zhangchao", AV_DICT_DONT_OVERWRITE);
+//    av_dict_set(&format_opts, "everplay_password", "12345", AV_DICT_DONT_OVERWRITE);
     err = avformat_open_input(&ic, is->filename, is->iformat, &format_opts);
     if (err < 0) {
         print_error(is->filename, err);
@@ -2784,6 +2786,9 @@ static int read_thread(void *arg)
     if (scan_all_pmts_set)
         av_dict_set(&format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
 
+//    av_dict_set(&format_opts, "everplay_user_name", NULL, AV_DICT_MATCH_CASE);
+//    av_dict_set(&format_opts, "everplay_password", NULL, AV_DICT_MATCH_CASE);
+    
     if ((t = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
         av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
         ret = AVERROR_OPTION_NOT_FOUND;
