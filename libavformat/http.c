@@ -235,6 +235,9 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
         strcat(auth, password);
     }
     
+    av_log(h, AV_LOG_ERROR, "everplay_user_name: %s, everplay_password:%s, auth:%s\n",
+           username, password, auth);
+    
     ff_url_join(hoststr, sizeof(hoststr), NULL, NULL, hostname, port, NULL);
 
     env_http_proxy = getenv_utf8("http_proxy");
