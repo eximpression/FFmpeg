@@ -186,13 +186,13 @@ OBJS = adler32.o                                                        \
        video_enc_params.o                                               \
        video_hint.o                                                     \
        film_grain_params.o                                              \
-       ccp_calc.o														\
-       dst_ac.o															\
-       dst_data.o														\
-       dst_decoder.o													\
-       dst_fram.o														\
-       dst_init.o														\
-       unpack_dst.o														\
+       dst/ccp_calc.o													\
+	   dst/dst_ac.o														\
+	   dst/dst_data.o													\
+	   dst/dst_decoder.o												\
+	   dst/dst_fram.o													\
+	   dst/dst_init.o													\
+	   dst/unpack_dst.o													\
 
 OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
 OBJS-$(CONFIG_D3D11VA)                  += hwcontext_d3d11va.o

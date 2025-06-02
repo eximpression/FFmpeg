@@ -21,7 +21,9 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/dst_decoder.h"
+#include "libavutil/dst/dst_decoder.h"
+#include "sacd_ripper/scarletbook_read.h"
+#include "sacd_ripper/genre.dat"
 #include "avformat.h"
 #include "internal.h"
 #include "id3v2.h"
@@ -29,6 +31,8 @@
 #include <libkern/OSByteOrder.h>
 
 #define SACD_OFFSET 1044480 // 2048 * 510
+
+#define SACD_RIPPER 1
 typedef struct {
     int track_num;
     int64_t index;
@@ -52,8 +56,8 @@ typedef struct {
     int64_t total_blocks;
     int64_t current_block;
     int64_t last_block_dsd_bytes;
-    int trackLSN[256];
-    int currentLSN;
+    uint32_t trackLSN[256];
+    uint32_t currentLSN;
     unsigned char *buffer;
     int bytesInBuffer;
     unsigned char *dstBuffer;
@@ -69,6 +73,7 @@ static int sacd_iso_probe(const AVProbeData *p)
         return 0;
     }
     unsigned char* offset_buffer =  p->buf + SACD_OFFSET;
+    //Master_TOC_Signature
     if(memcmp(offset_buffer, "SACDMTOC", 8) == 0){
         return AVPROBE_SCORE_MAX;
     }
@@ -307,13 +312,333 @@ static int sacd_iso_read_header(AVFormatContext *s)
     uint32_t tmp32;
     off_t areaTocOffset1;
     off_t areaTocOffset2;
+    int64_t new_pos;
     
     int64_t totalSamples = 0;
     int numTracks = 0;
     char header[8] = {0};
     
+#if SACD_RIPPER
+    scarletbook_handle_t *sb_handle = scarletbook_open(s);
+    if (sb_handle == 0) {
+        return AVERROR_INVALIDDATA;
+    }
     
-    int64_t new_pos = avio_seek(pb, SACD_OFFSET + 8, SEEK_SET);
+    areaTocOffset1 = sb_handle->master_toc->area_1_toc_1_start * SACD_LSN_SIZE;
+    areaTocOffset2 = sb_handle->master_toc->area_1_toc_2_start * SACD_LSN_SIZE;
+    uint8_t key[256] = {0}, value[256] = {0};
+    
+    if (areaTocOffset1) {
+        if (sb_handle->twoch_area_idx == -1) {
+            return AVERROR_INVALIDDATA;
+        }
+        
+        totalSamples = ((int64_t)sb_handle->area[sb_handle->twoch_area_idx].area_toc->total_playtime.minutes * 60 + (int64_t)sb_handle->area[sb_handle->twoch_area_idx].area_toc->total_playtime.seconds - 2/* 2 seconds offset */) * 75 + sb_handle->area[sb_handle->twoch_area_idx].area_toc->total_playtime.frames;
+        totalSamples = totalSamples * 37632;
+        snprintf(value, 255, "%lld", totalSamples);
+        av_dict_set(&s->metadata, "sacd_total_frames", value, 0);
+        sacd->total_samples = totalSamples;
+        sacd->sample_rate = 2822400;
+        snprintf(value, 255, "%d", 2822400);
+        av_dict_set(&s->metadata, "sacd_sample_rate", value, 0);
+        numTracks = sb_handle->area[sb_handle->twoch_area_idx].area_toc->track_count;
+        sacd->num_tracks = numTracks;
+        
+        snprintf(value, 255, "%d", numTracks);
+        av_dict_set(&s->metadata, "tracktotal", value, 0);
+        if(numTracks <= 0){
+            return AVERROR_INVALIDDATA;
+        }
+        
+        sacd->tracks = malloc(sizeof(SACDISOTrack) * numTracks);
+        
+        /* create primary stream before any id3 coverart streams */
+        st = avformat_new_stream(s, NULL);
+        if (!st)
+            return AVERROR(ENOMEM);
+        int MM,SS,FF;
+        int64_t idx, duration;
+        int64_t previousFrame = 0;
+        int64_t previousIndex = 0;
+        
+        for(int i=0;i<numTracks;i++) {
+            sacd->trackLSN[i] = sb_handle->area[sb_handle->twoch_area_idx].area_tracklist_offset->track_start_lsn[i];
+            SACDISOTrack *track = &(sacd->tracks[i]);
+            track->track_num = i+1;
+            int MM = sb_handle->area[sb_handle->twoch_area_idx].area_tracklist_time->start[i].minutes;
+            int SS = sb_handle->area[sb_handle->twoch_area_idx].area_tracklist_time->start[i].seconds;
+            int FF = sb_handle->area[sb_handle->twoch_area_idx].area_tracklist_time->start[i].frames;
+            idx = (int64_t)MM * 60 * 75;
+            idx += (int64_t)SS * 75;
+            idx += FF;
+            idx -= 150; /* 2 seconds offset */
+            
+            track->index = idx;
+            track->origin_index = idx;
+
+            MM = sb_handle->area[sb_handle->twoch_area_idx].area_tracklist_time->duration[i].minutes;
+            SS = sb_handle->area[sb_handle->twoch_area_idx].area_tracklist_time->duration[i].seconds;
+            FF = sb_handle->area[sb_handle->twoch_area_idx].area_tracklist_time->duration[i].frames;
+            duration = (int64_t)MM * 60 * 75;
+            duration += (int64_t)SS * 75;
+            duration += FF;
+            
+            track->total_frames = duration;
+            track->origin_frames = duration;
+            double seconds = MM*60 + SS + (double)FF/75.0;
+            track->duration = seconds;
+            track->gap = 0;
+            track->origin_gap = 0;
+            if(i > 0) {
+                int64_t gap = idx - (previousIndex + previousFrame);
+                previousIndex = idx;
+                previousFrame = duration;
+                track->gap = gap;
+                track->origin_gap = gap;
+            }else {
+                previousIndex = idx;
+                previousFrame = duration;
+            }
+        }
+        if (numTracks > 0) {
+            sacd->trackLSN[numTracks] = sacd->trackLSN[numTracks - 1] + (sb_handle->area[sb_handle->twoch_area_idx].area_tracklist_offset->track_length_lsn[numTracks - 1]);
+        }
+        double scale = (double)sacd->sample_rate/ 8.0 / 75.0;
+        const int sacd_id3_genres[] = {
+            12,     /* Not used => Other */
+            12,     /* Not defined => Other */
+            60,     /* Adult Contemporary => Top 40 */
+            40,     /* Alternative Rock => AlternRock */
+            12,     /* Children's Music => Other */
+            32,     /* Classical => Classical */
+            140,    /* Contemporary Christian => Contemporary Christian */
+            2,      /* Country => Country */
+            3,      /* Dance => Dance */
+            98,     /* Easy Listening => Easy Listening */
+            109,    /* Erotic => Porn Groove */
+            80,     /* Folk => Folk */
+            38,     /* Gospel => Gospel */
+            7,      /* Hip Hop => Hip-Hop */
+            8,      /* Jazz => Jazz */
+            86,     /* Latin => Latin */
+            77,     /* Musical => Musical */
+            10,     /* New Age => New Age */
+            103,    /* Opera => Opera */
+            104,    /* Operetta => Chamber Music */
+            13,     /* Pop Music => Pop */
+            15,     /* RAP => Rap */
+            16,     /* Reggae => Reggae */
+            17,     /* Rock Music => Rock */
+            14,     /* Rhythm & Blues => R&B */
+            37,     /* Sound Effects => Sound Clip */
+            24,     /* Sound Track => Soundtrack */
+            101,    /* Spoken Word => Speech */
+            48,     /* World Music => Ethnic */
+            0,      /* Blues => Blues */
+            12,     /* Not used => Other */
+        };
+        for(int i=0;i<numTracks;i++) {
+            SACDISOTrack *origTrack = &(sacd->tracks[i]);
+            
+            double index = scale * origTrack->index + 0.5;
+            double frames = scale * origTrack->total_frames + 0.5;
+            double gap = scale * origTrack->gap + 0.5;
+            
+            origTrack->index = (int64_t)index;
+            origTrack->total_frames = (int64_t)frames;
+            origTrack->gap = (int64_t)gap;
+
+            if(i > 0) {
+                SACDISOTrack *prev = &(sacd->tracks[i-1]);
+                if(prev->gap) {
+                    origTrack->gap = origTrack->index - (prev->index + prev->total_frames);
+                }
+                else {
+                    prev->total_frames = origTrack->index - prev->index;
+                }
+            }
+
+            snprintf(key, 255, "track_%d_track_number", i);
+            snprintf(value, 255, "%d", i+1);
+            av_dict_set(&s->metadata, key, value, 0);
+            
+            snprintf(key, 255, "track_%d_index", i);
+            snprintf(value, 255, "%d", origTrack->index);
+            av_dict_set(&s->metadata, key, value, 0);
+            
+            snprintf(key, 255, "track_%d_origin_index", i);
+            snprintf(value, 255, "%d", origTrack->origin_index);
+            av_dict_set(&s->metadata, key, value, 0);
+            
+            snprintf(key, 255, "track_%d__total_frames", i);
+            snprintf(value, 255, "%lld", origTrack->total_frames);
+            av_dict_set(&s->metadata, key, value, 0);
+            
+            snprintf(key, 255, "track_%d_origin_frames", i);
+            snprintf(value, 255, "%lld", origTrack->origin_frames);
+            av_dict_set(&s->metadata, key, value, 0);
+            
+            snprintf(key, 255, "track_%d_dutaion", i);
+            snprintf(value, 255, "%f", origTrack->duration);
+            av_dict_set(&s->metadata, key, value, 0);
+            
+            snprintf(key, 255, "track_%d_gap", i);
+            snprintf(value, 255, "%lld", origTrack->gap);
+            av_dict_set(&s->metadata, key, value, 0);
+            
+            snprintf(key, 255, "track_%d_origin_gap", i);
+            snprintf(value, 255, "%lld", origTrack->origin_gap);
+            av_dict_set(&s->metadata, key, value, 0);
+            
+            //title
+            char *title = sb_handle->area[sb_handle->twoch_area_idx].area_track_text[i].track_type_title;
+            if (title)
+            {
+                snprintf(key, 255, "track_%d_title", i);
+                snprintf(value, 255, "%s", title);
+                av_dict_set(&s->metadata, key, value, 0);
+            }
+            
+            //album
+            master_text_t *master_text = &sb_handle->master_text;
+            char *album_title = 0;
+
+            if (master_text->album_title)
+                album_title = master_text->album_title;
+            else if (master_text->album_title_phonetic)
+                album_title = master_text->album_title_phonetic;
+            else if (master_text->disc_title)
+                album_title = master_text->disc_title;
+            else if (master_text->disc_title_phonetic)
+                album_title = master_text->disc_title_phonetic;
+
+            if (album_title)
+            {
+                snprintf(key, 255, "track_%d_album", i);
+                snprintf(value, 255, "%s", album_title);
+                av_dict_set(&s->metadata, key, value, 0);
+            }
+            
+            
+            // Track Artists (Artist name /performer)
+            char *artist = sb_handle->area[sb_handle->twoch_area_idx].area_track_text[i].track_type_performer;
+            if (artist)
+            {
+                snprintf(key, 255, "track_%d_artist", i);
+                snprintf(value, 255, "%s", artist);
+                av_dict_set(&s->metadata, key, value, 0);
+            }
+   
+            char *album_artist = 0;
+            if (master_text->disc_artist)
+                album_artist = master_text->disc_artist;
+            else if (master_text->disc_artist_phonetic)
+                album_artist = master_text->disc_artist_phonetic;
+            else if (master_text->album_artist)
+                album_artist = master_text->album_artist;
+            else if (master_text->album_artist_phonetic)
+                album_artist = master_text->album_artist_phonetic;
+            if (album_artist)
+            {
+                snprintf(key, 255, "track_%d_album_artist", i);
+                snprintf(value, 255, "%s", album_artist);
+                av_dict_set(&s->metadata, key, value, 0);
+                if (artist == 0) {
+                    snprintf(key, 255, "track_%d_artist", i);
+                    snprintf(value, 255, "%s", album_artist);
+                    av_dict_set(&s->metadata, key, value, 0);
+                }
+            }
+            
+            char *composer = sb_handle->area[sb_handle->twoch_area_idx].area_track_text[i].track_type_composer;
+            if (composer)
+            {
+                snprintf(key, 255, "track_%d_composer", i);
+                snprintf(value, 255, "%s", composer);
+                av_dict_set(&s->metadata, key, value, 0);
+            }
+            
+            // ISCR
+            if (&sb_handle->area[sb_handle->twoch_area_idx].area_isrc_genre->isrc[i])
+            {
+                char isrc[16];
+                
+                memcpy(isrc, sb_handle->area[sb_handle->twoch_area_idx].area_isrc_genre->isrc[i].country_code, 2);
+                memcpy(isrc + 2, sb_handle->area[sb_handle->twoch_area_idx].area_isrc_genre->isrc[i].owner_code, 3);
+                memcpy(isrc + 5, sb_handle->area[sb_handle->twoch_area_idx].area_isrc_genre->isrc[i].recording_year, 2);
+                memcpy(isrc + 7, sb_handle->area[sb_handle->twoch_area_idx].area_isrc_genre->isrc[i].designation_code, 5);
+                isrc[12] = 0x00;
+
+                snprintf(key, 255, "track_%d_iscr", i);
+                snprintf(value, 255, "%s", isrc);
+                av_dict_set(&s->metadata, key, value, 0);
+            }
+            
+            // Publisher
+            if (sb_handle->master_text.album_publisher)
+            {
+                char *publisher = sb_handle->master_text.album_publisher;
+                snprintf(key, 255, "track_%d_publisher", i);
+                snprintf(value, 255, "%s", publisher);
+                av_dict_set(&s->metadata, key, value, 0);
+            }
+
+            // Copyright
+            if (sb_handle->master_text.album_copyright)
+            {
+                char *copyright = sb_handle->master_text.album_copyright;
+                snprintf(key, 255, "track_%d_copyright", i);
+                snprintf(value, 255, "%s", copyright);
+                av_dict_set(&s->metadata, key, value, 0);
+            }
+            
+            // Part of set. Disc sequence/set size
+            if (sb_handle->master_toc)
+            {
+                master_toc_t *mtoc = sb_handle->master_toc;
+                snprintf(key, 255, "track_%d_track_disc", i);
+                snprintf(value, 255, "%d/%d", mtoc->album_sequence_number, mtoc->album_set_size);
+                av_dict_set(&s->metadata, key, value, 0);
+            }
+            
+            // Genre
+            char *genre = (char *)genre_table[sacd_id3_genres[sb_handle->area[sb_handle->twoch_area_idx].area_isrc_genre->track_genre[i].genre & 0x1f]];
+            if (genre ) {
+                snprintf(key, 255, "track_%d_genre", i);
+                snprintf(value, 255, "%s", genre);
+                av_dict_set(&s->metadata, key, value, 0);
+            }
+
+            // YEAR
+            if (sb_handle->master_toc->disc_date_year > 0) {
+                snprintf(key, 255, "track_%d_year", i);
+                snprintf(value, 255, "%04d", sb_handle->master_toc->disc_date_year);
+                av_dict_set(&s->metadata, key, value, 0);
+            }
+
+            // Month, day
+            uint8_t day = sb_handle->master_toc->disc_date_day;
+            uint8_t mon = sb_handle->master_toc->disc_date_month;
+            if (day > 0 && mon > 0) {
+                if (mon > 12) {
+                    day = sb_handle->master_toc->disc_date_month;
+                    mon =sb_handle->master_toc->disc_date_day;
+                }
+                snprintf(key, 255, "track_%d_mon", i);
+                snprintf(value, 255, "%02d", mon);
+                av_dict_set(&s->metadata, key, value, 0);
+                snprintf(key, 255, "track_%d_day", i);
+                snprintf(value, 255, "%02d", day);
+                av_dict_set(&s->metadata, key, value, 0);
+            }
+        }
+    }
+    if (sb_handle) {
+        scarletbook_close(sb_handle);
+        sb_handle = 0;
+    }
+#else
+    new_pos = avio_seek(pb, SACD_OFFSET + 8, SEEK_SET);
     if (new_pos < 0) {
         return AVERROR_INVALIDDATA;
     }
@@ -617,6 +942,7 @@ static int sacd_iso_read_header(AVFormatContext *s)
     if(flagTRL != 3){
         return AVERROR_INVALIDDATA;
     }
+#endif
     sacd->currentLSN = sacd->trackLSN[0];
     off_t offset = (off_t)sacd->currentLSN * 2048;
     new_pos = avio_seek(pb, offset, SEEK_SET);
