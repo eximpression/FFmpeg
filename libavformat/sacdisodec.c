@@ -865,4 +865,5 @@ const AVInputFormat ff_sacd_iso_demuxer = {
     .read_close     = sacd_iso_read_close,
     .read_seek      = sacd_iso_seek,
     .flags          = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK,
+    .extensions     = "iso"
 };
